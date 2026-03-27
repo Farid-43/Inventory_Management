@@ -75,7 +75,7 @@ _Requirement Check:_ DTO usage, Exception handling, Layered architecture.
   4. **Testing:** Write highly focused Unit Tests using `@ExtendWith(MockitoExtension.class)` for all Service classes.
 - **Git Action:** Phase implementation completed on `feature/business-logic`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 6: REST Controllers & Roles Authorization
+## Phase 6: REST Controllers & Roles Authorization (Status: Complete)
 
 _Requirement Check:_ 3 Controllers, Roles enforced (ADMIN, SELLER, BUYER), REST principles.
 
@@ -85,7 +85,7 @@ _Requirement Check:_ 3 Controllers, Roles enforced (ADMIN, SELLER, BUYER), REST 
   1. Create `ProductController`, `OrderController`, `AuthController`.
   2. Restrict methods using `@PreAuthorize` based on roles.
   3. **Testing:** Write Integration Tests using `@SpringBootTest` and `MockMvc` to verify endpoint routing, DTO validation, and security access.
-- **Git Action:** Push PR. CI runs. Member 2 reviews and merges.
+- **Git Action:** Phase implementation completed on `feature/rest-controllers`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
 ## Phase 7: UI Integration (Thymeleaf Templates)
 

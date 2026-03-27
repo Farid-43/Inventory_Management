@@ -1,10 +1,10 @@
 # Progress Details: Inventory Management Project
 
-This document captures everything completed so far (Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5), including technical decisions, workflow rules, and likely teacher viva questions.
+This document captures everything completed so far (Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6), including technical decisions, workflow rules, and likely teacher viva questions.
 
 ## 1. Current Project Status
 
-- Current working branch: `feature/business-logic`
+- Current working branch: `feature/rest-controllers`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
@@ -12,7 +12,8 @@ This document captures everything completed so far (Phase 1, Phase 2, Phase 3, P
   - Phase 3: Entities, repositories, and DB connection
   - Phase 4: Foundational Spring Security
   - Phase 5: Business logic, DTOs, and exception handling
-- Test status (latest local run): 11 passed, 0 failed
+  - Phase 6: REST controllers and role authorization
+- Test status (latest local run): 22 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -135,13 +136,14 @@ Why important:
 ## 4. Tests Executed So Far
 
 - Local test execution performed with the integrated runner.
-- Result: 11 tests passed, 0 failed.
+- Result: 22 tests passed, 0 failed.
 - Existing test classes currently include:
   - `InventoryManagementApplicationTests.java`
   - `InventoryDataJpaTests.java`
   - `CustomUserDetailsServiceTest.java`
   - `AuthServiceTest.java`
   - `ProductServiceTest.java`
+  - `ControllerIntegrationTests.java`
 
 ## 5. Workflow You Are Following Now
 
@@ -160,7 +162,7 @@ This is exactly the behavior your teacher requested.
 
 ## 6. What Is Not Done Yet
 
-- Phase 6 onwards (controllers, UI, deployment, final docs/demo) are pending.
+- Phase 7 onwards (UI, deployment, final docs/demo) are pending.
 
 ## 6.1 Phase 3 Completed Work (Entities + Repositories + DB Config)
 
@@ -288,6 +290,55 @@ Why important:
 - Satisfies Phase 5 requirement for layered architecture and DTO usage.
 - Establishes reusable business logic before controller implementation in Phase 6.
 - Provides centralized exception handling foundation for future REST endpoints.
+
+## 6.4 Phase 6 Completed Work (REST Controllers + Role Authorization)
+
+Files:
+
+- `src/main/java/com/example/inventory_management/controller/ProductController.java`
+- `src/main/java/com/example/inventory_management/controller/AuthController.java`
+- `src/main/java/com/example/inventory_management/controller/OrderController.java`
+- `src/main/java/com/example/inventory_management/service/OrderService.java`
+- `src/main/java/com/example/inventory_management/dto/OrderCreateRequestDto.java`
+- `src/main/java/com/example/inventory_management/dto/OrderItemRequestDto.java`
+- `src/main/java/com/example/inventory_management/dto/OrderItemResponseDto.java`
+- `src/main/java/com/example/inventory_management/dto/OrderResponseDto.java`
+- `src/main/java/com/example/inventory_management/repository/CustomerOrderRepository.java`
+- `src/main/java/com/example/inventory_management/security/SecurityConfig.java`
+- `src/main/java/com/example/inventory_management/exception/GlobalExceptionHandler.java`
+- `src/test/java/com/example/inventory_management/controller/ControllerIntegrationTests.java`
+
+Implemented:
+
+- Added 3 REST controllers required by Phase 6:
+  - `ProductController`: CRUD endpoints for products.
+  - `OrderController`: place order, get own orders, and get all orders.
+  - `AuthController`: registration endpoint.
+- Enforced role-based authorization with `@PreAuthorize`:
+  - Product create/update/delete: `ADMIN` or `SELLER`.
+  - Product read endpoints: authenticated `ADMIN`/`SELLER`/`BUYER`.
+  - Order placement and own-order history: authenticated `ADMIN`/`SELLER`/`BUYER`.
+  - All-orders endpoint: `ADMIN` or `SELLER`.
+- Added `OrderService` business logic for placing and listing orders:
+  - Validates item quantity and stock.
+  - Decrements stock on successful order placement.
+  - Maps order entities to response DTOs including line totals and grand total.
+- Extended repository and security/exception config for controller flow:
+  - Added user-specific and sorted order queries in `CustomerOrderRepository`.
+  - Allowed `/api/auth/register` as public.
+  - Added explicit `AccessDeniedException` mapping to HTTP 403.
+
+Validation performed:
+
+- Full clean build and tests passed via `mvnw.cmd -B clean test`.
+- Test summary after Phase 6 additions: `16 tests run, 0 failures, 0 errors` (Maven clean run).
+- Integration tests verify role restrictions and endpoint behavior via MockMvc.
+
+Why important:
+
+- Satisfies Phase 6 requirement of 3 controllers and role-based authorization.
+- Establishes API layer contract for upcoming UI integration in Phase 7.
+- Catches access-control regressions early using integration tests.
 
 ## 7. Likely Teacher Questions and Good Answers
 
@@ -591,8 +642,81 @@ Answer idea:
 4. If found, service updates mutable fields and saves entity.
 5. Saved entity is mapped to `ProductResponseDto` and returned.
 
+## 7.6 Phase 6 Specific Viva Questions and Answers
+
+### Q38. Why did you use `@PreAuthorize` on controller methods?
+
+Answer idea:
+
+- It enforces role checks at method level and keeps authorization close to endpoint behavior.
+- It is clearer and easier to audit than only URL-pattern-based access rules.
+
+### Q39. Which roles can create or delete products?
+
+Answer idea:
+
+- Only `ADMIN` and `SELLER` can create, update, or delete products.
+- `BUYER` is restricted to read-only product access.
+
+### Q40. Why did you add an explicit `AccessDeniedException` handler?
+
+Answer idea:
+
+- Without it, denied authorization can bubble to generic exception mapping and produce incorrect 500 responses.
+- Explicit mapping ensures correct HTTP 403 responses for forbidden access.
+
+### Q41. What does `OrderService.placeOrder(...)` validate?
+
+Answer idea:
+
+- Order must contain at least one item.
+- Item quantity must be positive.
+- Product must exist.
+- Product stock must be enough before reducing inventory.
+
+### Q42. How do you compute order totals in response?
+
+Answer idea:
+
+- Each line total is `unitPrice * quantity` in `OrderItemResponseDto`.
+- Grand total is the sum of all line totals in `OrderResponseDto`.
+
+## 7.7 Flow-Based Viva Questions (Phase 6)
+
+### Q43. Explain the product create API flow (authorized seller/admin).
+
+Answer idea:
+
+1. Authenticated user calls `POST /api/products`.
+2. `@PreAuthorize` checks role (`ADMIN`/`SELLER`).
+3. Controller forwards payload to `ProductService.createProduct`.
+4. Service maps DTO to entity and saves via repository.
+5. Service maps saved entity to response DTO.
+6. API returns `201 Created`.
+
+### Q44. Explain the order placement flow.
+
+Answer idea:
+
+1. Authenticated user calls `POST /api/orders` with item list.
+2. Controller reads username from `Principal` and calls `OrderService.placeOrder`.
+3. Service validates request, loads user and products, checks stock.
+4. Service creates `CustomerOrder` and `OrderItem` entities.
+5. Service reduces product stock and saves order transactionally.
+6. API returns order summary with line totals and total amount.
+
+### Q45. Explain the forbidden access test flow for buyer creating product.
+
+Answer idea:
+
+1. Test runs with `@WithMockUser(roles = "BUYER")`.
+2. Test calls `POST /api/products`.
+3. `@PreAuthorize` fails role check.
+4. Access is denied and mapped to HTTP 403 by exception handler.
+5. Test asserts forbidden response, confirming role policy is enforced.
+
 ## 8. Recommended Next Action (Immediately After This)
 
-- Open PR from `feature/business-logic` to `develop` for Phase 5 changes.
+- Open PR from `feature/rest-controllers` to `develop` for Phase 6 changes.
 - Ensure CI is green, get teammate review approval, and merge.
-- Start Phase 6 on a fresh branch from updated `develop`.
+- Start Phase 7 on a fresh branch from updated `develop`.
