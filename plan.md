@@ -62,7 +62,7 @@ _Requirement Check:_ Spring Security, BCrypt Password encryption.
   4. **Testing:** Write Unit tests mocking the `UserRepository` to test your `UserDetailsService`.
 - **Git Action:** Phase implementation completed on `security`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 5: Business Logic, DTOs & Exceptions
+## Phase 5: Business Logic, DTOs & Exceptions (Status: Complete)
 
 _Requirement Check:_ DTO usage, Exception handling, Layered architecture.
 
@@ -73,7 +73,7 @@ _Requirement Check:_ DTO usage, Exception handling, Layered architecture.
   2. Create DTOs (`ProductRequestDto`, `ProductResponseDto`, `UserRegistrationDto`).
   3. Create `ProductService` and `AuthService`.
   4. **Testing:** Write highly focused Unit Tests using `@ExtendWith(MockitoExtension.class)` for all Service classes.
-- **Git Action:** Push PR. CI runs. Member 1 reviews and merges.
+- **Git Action:** Phase implementation completed on `feature/business-logic`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
 ## Phase 6: REST Controllers & Roles Authorization
 

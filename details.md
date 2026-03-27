@@ -1,17 +1,18 @@
 # Progress Details: Inventory Management Project
 
-This document captures everything completed so far (Phase 1, Phase 2, Phase 3, and Phase 4), including technical decisions, workflow rules, and likely teacher viva questions.
+This document captures everything completed so far (Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5), including technical decisions, workflow rules, and likely teacher viva questions.
 
 ## 1. Current Project Status
 
-- Current working branch: `security`
+- Current working branch: `feature/business-logic`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
   - Phase 2: Dockerization + base CI pipeline
   - Phase 3: Entities, repositories, and DB connection
   - Phase 4: Foundational Spring Security
-- Test status (latest local run): 5 passed, 0 failed
+  - Phase 5: Business logic, DTOs, and exception handling
+- Test status (latest local run): 11 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -134,10 +135,13 @@ Why important:
 ## 4. Tests Executed So Far
 
 - Local test execution performed with the integrated runner.
-- Result: 3 tests passed, 0 failed.
+- Result: 11 tests passed, 0 failed.
 - Existing test classes currently include:
   - `InventoryManagementApplicationTests.java`
   - `InventoryDataJpaTests.java`
+  - `CustomUserDetailsServiceTest.java`
+  - `AuthServiceTest.java`
+  - `ProductServiceTest.java`
 
 ## 5. Workflow You Are Following Now
 
@@ -156,7 +160,7 @@ This is exactly the behavior your teacher requested.
 
 ## 6. What Is Not Done Yet
 
-- Phase 5 onwards (business logic, controllers, UI, deployment, final docs/demo) are pending.
+- Phase 6 onwards (controllers, UI, deployment, final docs/demo) are pending.
 
 ## 6.1 Phase 3 Completed Work (Entities + Repositories + DB Config)
 
@@ -244,6 +248,47 @@ Why important:
 - Satisfies Phase 4 requirement for foundational Spring Security + password encoder + custom user loading.
 - Creates the base required for Phase 5 registration logic and Phase 6 role authorization.
 
+## 6.3 Phase 5 Completed Work (Business Logic + DTOs + Exceptions)
+
+Files:
+
+- `src/main/java/com/example/inventory_management/dto/ProductRequestDto.java`
+- `src/main/java/com/example/inventory_management/dto/ProductResponseDto.java`
+- `src/main/java/com/example/inventory_management/dto/UserRegistrationDto.java`
+- `src/main/java/com/example/inventory_management/exception/ResourceNotFoundException.java`
+- `src/main/java/com/example/inventory_management/exception/BadRequestException.java`
+- `src/main/java/com/example/inventory_management/exception/GlobalExceptionHandler.java`
+- `src/main/java/com/example/inventory_management/service/ProductService.java`
+- `src/main/java/com/example/inventory_management/service/AuthService.java`
+- `src/test/java/com/example/inventory_management/service/ProductServiceTest.java`
+- `src/test/java/com/example/inventory_management/service/AuthServiceTest.java`
+
+Implemented:
+
+- Added DTO layer for product create/update/response and user registration payload.
+- Added service layer classes:
+  - `ProductService` with create, getById, getAll, update, and delete operations.
+  - `AuthService` with registration flow (duplicate checks, password encoding, default role assignment).
+- Added global exception architecture:
+  - `ResourceNotFoundException` for missing resources.
+  - `BadRequestException` for invalid registration/business constraints.
+  - `GlobalExceptionHandler` using `@ControllerAdvice` to produce consistent error responses.
+- Added focused Mockito unit tests for service layer behaviors:
+  - `ProductServiceTest` covers create path, not-found path, and delete path.
+  - `AuthServiceTest` covers successful registration, duplicate username validation, and default role creation when missing.
+
+Validation performed:
+
+- Full clean build and tests passed via `mvnw.cmd -B clean test`.
+- Test summary after Phase 5 additions: `11 passed, 0 failed, 0 errors`.
+- Existing Phase 3 and Phase 4 tests still pass, confirming no regression.
+
+Why important:
+
+- Satisfies Phase 5 requirement for layered architecture and DTO usage.
+- Establishes reusable business logic before controller implementation in Phase 6.
+- Provides centralized exception handling foundation for future REST endpoints.
+
 ## 7. Likely Teacher Questions and Good Answers
 
 ### Q1. What branch protection did you use and why?
@@ -311,7 +356,7 @@ Answer idea:
 Answer idea:
 
 - Yes, our workflow requires adding relevant tests in each feature PR.
-- Current baseline tests pass (3/3).
+- Current baseline tests pass (11/11).
 
 ## 7.1 Phase 3 Specific Viva Questions and Answers
 
@@ -476,8 +521,78 @@ Answer idea:
 5. Another team member approves, then PR is merged into `develop`.
 6. Team syncs local `develop` and continues to next phase.
 
+## 7.4 Phase 5 Specific Viva Questions and Answers
+
+### Q30. Why introduce DTOs instead of returning entities directly?
+
+Answer idea:
+
+- DTOs decouple API contracts from database entities.
+- They prevent exposing internal model fields and make validation/versioning easier.
+
+### Q31. What responsibilities are in `ProductService`?
+
+Answer idea:
+
+- Handles product business operations: create, read, update, delete.
+- Converts between entity model and response DTO.
+- Throws `ResourceNotFoundException` for invalid product IDs.
+
+### Q32. What responsibilities are in `AuthService`?
+
+Answer idea:
+
+- Handles registration business rules.
+- Checks duplicate username and email.
+- Encodes password using configured encoder.
+- Assigns default `BUYER` role (creates role if missing).
+
+### Q33. Why use `@ControllerAdvice` now before controllers?
+
+Answer idea:
+
+- It standardizes error responses early and avoids repeated try/catch logic later.
+- When controllers are added in Phase 6, exception mapping already exists.
+
+### Q34. How are duplicate registrations prevented?
+
+Answer idea:
+
+- Service checks `UserRepository.findByUsername(...)` and `findByEmail(...)` first.
+- If either exists, service throws `BadRequestException`.
+
+### Q35. How did you validate Phase 5 logic quality?
+
+Answer idea:
+
+- Added focused service unit tests with Mockito for success and failure paths.
+- Verified full test suite still passes after integration of new service layer.
+
+## 7.5 Flow-Based Viva Questions (Phase 5)
+
+### Q36. Explain the user registration flow implemented in Phase 5.
+
+Answer idea:
+
+1. Controller (future Phase 6) receives registration payload and passes `UserRegistrationDto` to `AuthService`.
+2. `AuthService` validates username and email uniqueness via `UserRepository`.
+3. Password is encoded using `PasswordEncoder`.
+4. Default role `BUYER` is loaded from `RoleRepository` or created if absent.
+5. Role is attached to user and user is persisted via `UserRepository`.
+6. On validation failure, `BadRequestException` is thrown and mapped by `GlobalExceptionHandler`.
+
+### Q37. Explain the product update flow in `ProductService`.
+
+Answer idea:
+
+1. Service receives product ID and `ProductRequestDto`.
+2. Service loads existing product from repository.
+3. If missing, throws `ResourceNotFoundException`.
+4. If found, service updates mutable fields and saves entity.
+5. Saved entity is mapped to `ProductResponseDto` and returned.
+
 ## 8. Recommended Next Action (Immediately After This)
 
-- Open PR from `security` to `develop` for Phase 4 changes.
+- Open PR from `feature/business-logic` to `develop` for Phase 5 changes.
 - Ensure CI is green, get teammate review approval, and merge.
-- Start Phase 5 on a fresh branch from updated `develop`.
+- Start Phase 6 on a fresh branch from updated `develop`.
