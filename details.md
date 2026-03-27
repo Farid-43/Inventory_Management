@@ -1,16 +1,17 @@
 # Progress Details: Inventory Management Project
 
-This document captures everything completed so far (Phase 1, Phase 2, and Phase 3), including technical decisions, workflow rules, and likely teacher viva questions.
+This document captures everything completed so far (Phase 1, Phase 2, Phase 3, and Phase 4), including technical decisions, workflow rules, and likely teacher viva questions.
 
 ## 1. Current Project Status
 
-- Current working branch: `feature/entities-db`
+- Current working branch: `security`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
   - Phase 2: Dockerization + base CI pipeline
   - Phase 3: Entities, repositories, and DB connection
-- Test status (latest local run): 3 passed, 0 failed
+  - Phase 4: Foundational Spring Security
+- Test status (latest local run): 5 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -39,6 +40,7 @@ Meaning in practice:
 - Enforces code review discipline in a 2-member team.
 - Protects `main` from unreviewed commits.
 - Matches rubric requirement: no direct push to `main`, at least one review.
+- `develop` rule now enforces required CI status check (`test`) before merge.
 
 ## 3. Phase 2 Completed Work (Docker + CI)
 
@@ -154,7 +156,7 @@ This is exactly the behavior your teacher requested.
 
 ## 6. What Is Not Done Yet
 
-- Phase 4 onwards (security implementation, services, controllers, UI, deployment) are pending.
+- Phase 5 onwards (business logic, controllers, UI, deployment, final docs/demo) are pending.
 
 ## 6.1 Phase 3 Completed Work (Entities + Repositories + DB Config)
 
@@ -204,6 +206,43 @@ Why important:
 
 - Satisfies the Phase 3 requirement of database connection, multiple tables, and relationship mapping.
 - Gives a stable persistence baseline before starting security and service layers.
+
+## 6.2 Phase 4 Completed Work (Foundational Security)
+
+Files:
+
+- `src/main/java/com/example/inventory_management/security/SecurityConfig.java`
+- `src/main/java/com/example/inventory_management/security/CustomUserDetailsService.java`
+- `src/test/java/com/example/inventory_management/security/CustomUserDetailsServiceTest.java`
+
+Implemented:
+
+- Added `SecurityConfig` with:
+  - `BCryptPasswordEncoder` bean for password hashing.
+  - `@EnableMethodSecurity` to support future role-based method authorization.
+  - `SecurityFilterChain` rules:
+    - `"/register"` and `"/h2-console/**"` are public.
+    - All other routes require authentication.
+    - Form login enabled.
+    - CSRF ignored only for H2 console and frame options set to same origin for H2 console use.
+- Added `CustomUserDetailsService`:
+  - Loads users by username from `UserRepository`.
+  - Throws `UsernameNotFoundException` for unknown users.
+  - Maps DB roles to Spring Security authorities with `ROLE_` prefix normalization.
+- Added focused unit tests in `CustomUserDetailsServiceTest`:
+  - Successful user load returns correct username, password, and authorities.
+  - Missing user path throws `UsernameNotFoundException`.
+
+Validation performed:
+
+- Full clean build and tests passed via `mvnw.cmd -B clean test`.
+- Test summary after Phase 4 additions: `5 passed, 0 failed, 0 errors`.
+- Security wiring confirmed at startup log level (`customUserDetailsService` registered in authentication manager).
+
+Why important:
+
+- Satisfies Phase 4 requirement for foundational Spring Security + password encoder + custom user loading.
+- Creates the base required for Phase 5 registration logic and Phase 6 role authorization.
 
 ## 7. Likely Teacher Questions and Good Answers
 
@@ -326,7 +365,119 @@ Answer idea:
 - Security depends on user and role persistence.
 - Completing entities/repositories first reduces coupling and makes Phase 4 implementation straightforward.
 
+## 7.2 Phase 4 Specific Viva Questions and Answers
+
+### Q18. Why did you implement a custom `UserDetailsService` instead of using in-memory users?
+
+Answer idea:
+
+- In-memory users are temporary and not tied to application data.
+- Custom `UserDetailsService` loads real users/roles from the database through `UserRepository`.
+
+### Q19. Why use `BCryptPasswordEncoder`?
+
+Answer idea:
+
+- BCrypt is a strong adaptive hashing algorithm designed for password storage.
+- It is the Spring Security standard choice for safely storing user passwords.
+
+### Q20. Why did you prefix roles with `ROLE_`?
+
+Answer idea:
+
+- Spring Security role checks expect authorities like `ROLE_ADMIN`.
+- Prefix normalization avoids failures if DB stores role names as plain `ADMIN`/`SELLER`/`BUYER`.
+
+### Q21. Which endpoints are public in your current configuration?
+
+Answer idea:
+
+- `/register` is public by design for account creation.
+- `/h2-console/**` is public only for local development/testing convenience.
+- All other endpoints require login.
+
+### Q22. Why is CSRF ignored for H2 console only?
+
+Answer idea:
+
+- H2 console uses frames and interactive form behavior that often fails under strict CSRF defaults.
+- We scoped CSRF relaxation narrowly to H2 paths to keep default protection elsewhere.
+
+### Q23. How did you test security in Phase 4?
+
+Answer idea:
+
+- We wrote unit tests for `CustomUserDetailsService` using Mockito.
+- Tests verify both success and failure paths (`UsernameNotFoundException`).
+
+### Q24. What is still missing before production-grade security?
+
+Answer idea:
+
+- Registration/login flows with encoded password persistence.
+- Role-based endpoint restrictions with `@PreAuthorize` in controllers.
+- Proper exception handling and potentially JWT/session-hardening based on architecture choice.
+
+## 7.3 Flow-Based Viva Questions (Up To Phase 4)
+
+### Q25. Explain the security flow of a protected request in your current app.
+
+Answer idea:
+
+1. Client requests a protected endpoint.
+2. Spring Security filter chain checks authentication state.
+3. If user is not logged in, request is redirected to form login.
+4. On login submit, Spring calls `CustomUserDetailsService.loadUserByUsername(...)`.
+5. Service fetches the user from `UserRepository` and returns Spring `UserDetails` with mapped authorities.
+6. Password is verified using `BCryptPasswordEncoder`.
+7. If valid, Spring creates authenticated session context and allows protected endpoint access.
+
+### Q26. Explain the flow of `CustomUserDetailsServiceTest`.
+
+Answer idea:
+
+1. Test class runs with `@ExtendWith(MockitoExtension.class)`.
+2. `UserRepository` is mocked and injected into `CustomUserDetailsService`.
+3. Success test stubs repository to return a user with role `ADMIN`.
+4. Test calls `loadUserByUsername("alice")` and verifies username/password/authority (`ROLE_ADMIN`).
+5. Failure test stubs repository to return empty optional.
+6. Test asserts `UsernameNotFoundException` is thrown with expected message content.
+
+### Q27. Explain the flow of `InventoryDataJpaTests` in Phase 3.
+
+Answer idea:
+
+1. Test boots a JPA-only Spring context via `@DataJpaTest`.
+2. Embedded H2 datasource is configured for isolated test execution.
+3. Hibernate generates schema from entity mappings.
+4. Test saves linked entities (`User`, `Role`, `Product`, `CustomerOrder`, `OrderItem`).
+5. Assertions verify persisted IDs and relationship integrity.
+6. This confirms table mappings and foreign-key relationships are valid.
+
+### Q28. Explain the CI flow from push/PR to merge decision.
+
+Answer idea:
+
+1. Developer pushes feature branch and opens PR to `develop`.
+2. GitHub Actions workflow `CI` triggers automatically.
+3. Runner checks out code, sets up Java, and runs `mvn clean test`.
+4. If tests fail, required status check fails and merge remains blocked.
+5. If tests pass, teammate review approval is still required.
+6. Only after both conditions pass (CI + review), PR can be merged.
+
+### Q29. Explain the branch protection flow your team follows.
+
+Answer idea:
+
+1. Work starts from `develop` on a dedicated feature branch.
+2. Direct merge/push bypass is disabled by rule.
+3. PR is mandatory with at least one approval.
+4. Required status check `test` must pass.
+5. Another team member approves, then PR is merged into `develop`.
+6. Team syncs local `develop` and continues to next phase.
+
 ## 8. Recommended Next Action (Immediately After This)
 
-- Create feature branch `feature/basic-security` from `develop`.
-- Start Phase 4 (`SecurityConfig`, `UserDetailsService`, and related unit tests).
+- Open PR from `security` to `develop` for Phase 4 changes.
+- Ensure CI is green, get teammate review approval, and merge.
+- Start Phase 5 on a fresh branch from updated `develop`.
