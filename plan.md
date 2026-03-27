@@ -49,18 +49,18 @@ _Requirement Check:_ DB connected, 4+ tables, Entity relationships (1:M, M:1, M:
   4. **Testing:** Write basic `@DataJpaTest` tests to verify that your entities save correctly to the database.
 - **Git Action:** Phase implementation completed on `feature/entities-db`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 4: Foundational Spring Security
+## Phase 4: Foundational Spring Security (Status: Complete)
 
 _Requirement Check:_ Spring Security, BCrypt Password encryption.
 
 - **Assignee:** Member 1
-- **Branch:** `feature/basic-security`
+- **Branch:** `feature/security`
 - **Task Details:**
   1. Create `SecurityConfig` with `BCryptPasswordEncoder`.
   2. Implement `UserDetailsService` connecting to `UserRepository`.
   3. Configure basic `HttpSecurity` (form login, allow `/register` publicly).
   4. **Testing:** Write Unit tests mocking the `UserRepository` to test your `UserDetailsService`.
-- **Git Action:** Push PR. CI runs. Member 2 reviews and merges.
+- **Git Action:** Phase implementation completed on `security`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
 ## Phase 5: Business Logic, DTOs & Exceptions
 
