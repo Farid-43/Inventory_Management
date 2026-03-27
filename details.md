@@ -1,15 +1,16 @@
 # Progress Details: Inventory Management Project
 
-This document captures everything completed so far (Phase 1 and Phase 2), including technical decisions, workflow rules, and likely teacher viva questions.
+This document captures everything completed so far (Phase 1, Phase 2, and Phase 3), including technical decisions, workflow rules, and likely teacher viva questions.
 
 ## 1. Current Project Status
 
-- Current working branch: `feature/ci-cd-docker`
+- Current working branch: `feature/entities-db`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
   - Phase 2: Dockerization + base CI pipeline
-- Test status (latest local run): 2 passed, 0 failed
+  - Phase 3: Entities, repositories, and DB connection
+- Test status (latest local run): 3 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -131,9 +132,10 @@ Why important:
 ## 4. Tests Executed So Far
 
 - Local test execution performed with the integrated runner.
-- Result: 2 tests passed, 0 failed.
-- Existing test class currently includes:
+- Result: 3 tests passed, 0 failed.
+- Existing test classes currently include:
   - `InventoryManagementApplicationTests.java`
+  - `InventoryDataJpaTests.java`
 
 ## 5. Workflow You Are Following Now
 
@@ -152,8 +154,56 @@ This is exactly the behavior your teacher requested.
 
 ## 6. What Is Not Done Yet
 
-- Phase 3 onwards (entities, repositories, services, security implementation, controllers, UI, deployment) are pending.
-- Branch protection status checks requirement should be enabled after CI workflow exists and is recognized by GitHub checks list.
+- Phase 4 onwards (security implementation, services, controllers, UI, deployment) are pending.
+
+## 6.1 Phase 3 Completed Work (Entities + Repositories + DB Config)
+
+Files:
+
+- `src/main/resources/application.yaml`
+- `src/main/java/com/example/inventory_management/model/User.java`
+- `src/main/java/com/example/inventory_management/model/Role.java`
+- `src/main/java/com/example/inventory_management/model/Product.java`
+- `src/main/java/com/example/inventory_management/model/CustomerOrder.java`
+- `src/main/java/com/example/inventory_management/model/OrderItem.java`
+- `src/main/java/com/example/inventory_management/repository/UserRepository.java`
+- `src/main/java/com/example/inventory_management/repository/RoleRepository.java`
+- `src/main/java/com/example/inventory_management/repository/ProductRepository.java`
+- `src/main/java/com/example/inventory_management/repository/CustomerOrderRepository.java`
+- `src/main/java/com/example/inventory_management/repository/OrderItemRepository.java`
+- `src/test/java/com/example/inventory_management/InventoryDataJpaTests.java`
+
+Implemented:
+
+- Main datasource now reads PostgreSQL config from environment variables with defaults:
+  - `DB_URL` (default `jdbc:postgresql://localhost:5432/mydatabase`)
+  - `DB_USER` (default `myuser`)
+  - `DB_PASSWORD` (default `secret`)
+- Added 5 entities with required relationships:
+  - `User` <-> `Role` as `M:M`
+  - `User` -> `CustomerOrder` as `1:M`
+  - `CustomerOrder` -> `OrderItem` as `1:M`
+  - `OrderItem` -> `Product` as `M:1`
+- Data model now creates 6 tables in DB:
+  - `users`
+  - `roles`
+  - `products`
+  - `orders`
+  - `order_items`
+  - `user_roles` (join table for many-to-many)
+- Added Spring Data JPA repositories for all entities.
+- Added focused `@DataJpaTest` tests to verify persistence and relationships.
+
+Validation performed:
+
+- `mvn -B clean test` passed (`3 passed, 0 failed`).
+- JPA test output confirms schema creation and relationship constraints.
+- Application startup tested with PostgreSQL from Docker Compose and datasource connection established successfully.
+
+Why important:
+
+- Satisfies the Phase 3 requirement of database connection, multiple tables, and relationship mapping.
+- Gives a stable persistence baseline before starting security and service layers.
 
 ## 7. Likely Teacher Questions and Good Answers
 
@@ -222,10 +272,61 @@ Answer idea:
 Answer idea:
 
 - Yes, our workflow requires adding relevant tests in each feature PR.
-- Current baseline tests pass (2/2).
+- Current baseline tests pass (3/3).
+
+## 7.1 Phase 3 Specific Viva Questions and Answers
+
+### Q11. Why did you use environment variables for datasource config?
+
+Answer idea:
+
+- It keeps credentials and host config environment-specific and avoids hardcoding secrets.
+- Same code can run on local Docker, CI, and cloud with only environment value changes.
+
+### Q12. Why did you create a separate `OrderItem` entity instead of direct many-to-many between `Order` and `Product`?
+
+Answer idea:
+
+- `OrderItem` stores extra business data (`quantity`, `unitPrice`) that cannot be modeled in a plain many-to-many join.
+- It is the standard inventory/order design for future extensibility.
+
+### Q13. What relationship types did you implement, and where?
+
+Answer idea:
+
+- Many-to-many: `User` and `Role`.
+- One-to-many / many-to-one: `User` to `CustomerOrder`, and `CustomerOrder` to `OrderItem`.
+- Many-to-one: `OrderItem` to `Product`.
+
+### Q14. How did you verify that entity mappings are correct?
+
+Answer idea:
+
+- Added `@DataJpaTest` cases that persist linked objects and assert IDs plus relationship traversal.
+- Hibernate SQL output shows table creation, foreign keys, and inserts for mapped entities.
+
+### Q15. Why are tests using H2 while runtime uses PostgreSQL?
+
+Answer idea:
+
+- H2 keeps CI fast and deterministic for baseline checks.
+- Runtime path is still validated against PostgreSQL locally via Docker Compose.
+
+### Q16. What repositories did you add in Phase 3?
+
+Answer idea:
+
+- `UserRepository`, `RoleRepository`, `ProductRepository`, `CustomerOrderRepository`, and `OrderItemRepository`.
+- This gives a clean DAO layer for service logic in upcoming phases.
+
+### Q17. What is the benefit of finishing Phase 3 before implementing security?
+
+Answer idea:
+
+- Security depends on user and role persistence.
+- Completing entities/repositories first reduces coupling and makes Phase 4 implementation straightforward.
 
 ## 8. Recommended Next Action (Immediately After This)
 
-- Push `feature/ci-cd-docker` and open PR to `develop`.
-- After merge, enforce required status checks in branch protection for `develop` and `main`.
-- Then start Phase 3 (`feature/entities-db`).
+- Create feature branch `feature/basic-security` from `develop`.
+- Start Phase 4 (`SecurityConfig`, `UserDetailsService`, and related unit tests).

@@ -36,7 +36,7 @@ _Requirement Check:_ Dockerfile, GitHub Actions, Postgres Docker Compose.
   4. Once merged, update GitHub Branch Protection for `develop` and `main` to **Require status checks to pass** (selecting the newly created test workflow).
 - **Git Action:** Push PR. Member 2 reviews. Must pass CI. Merge.
 
-## Phase 3: Entities, Repositories, & DB Connection
+## Phase 3: Entities, Repositories, & DB Connection (Status: Complete)
 
 _Requirement Check:_ DB connected, 4+ tables, Entity relationships (1:M, M:1, M:M), Tests.
 
@@ -47,7 +47,7 @@ _Requirement Check:_ DB connected, 4+ tables, Entity relationships (1:M, M:1, M:
   2. Create `User`, `Role`, `Product`, `Order`, `OrderItem` entities with proper mappings.
   3. Create Spring Data JPA Repositories.
   4. **Testing:** Write basic `@DataJpaTest` tests to verify that your entities save correctly to the database.
-- **Git Action:** Push PR. CI runs tests automatically! Member 1 reviews and merges.
+- **Git Action:** Phase implementation completed on `feature/entities-db`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
 ## Phase 4: Foundational Spring Security
 
