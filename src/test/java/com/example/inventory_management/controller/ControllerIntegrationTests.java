@@ -2,6 +2,7 @@ package com.example.inventory_management.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
 import java.math.BigDecimal;
 
@@ -66,6 +67,45 @@ class ControllerIntegrationTests {
     void unauthenticatedUser_cannotAccessProducts() throws Exception {
         mockMvc.perform(get("/api/products"))
                 .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    void loginPage_isPublicAndReturnsLoginView() throws Exception {
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("login"));
+    }
+
+    @Test
+    void registerPage_isPublicAndReturnsRegisterView() throws Exception {
+        mockMvc.perform(get("/register"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("register"));
+    }
+
+    @Test
+    void forgotPasswordPage_isPublicAndReturnsView() throws Exception {
+        mockMvc.perform(get("/forgot-password"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("forgot-password"));
+    }
+
+    @Test
+    void forgotPasswordSubmit_redirectsToLoginMessage() throws Exception {
+        mockMvc.perform(post("/forgot-password")
+                .with(csrf())
+                .param("emailOrUsername", "buyer@example.com"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?resetRequested"));
+    }
+
+    @Test
+    @WithMockUser(username = "buyer", roles = { "BUYER" })
+    void dashboard_forAuthenticatedUser_returnsDashboardView() throws Exception {
+        mockMvc.perform(get("/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("dashboard"))
+                .andExpect(model().attribute("username", "buyer"));
     }
 
     @Test

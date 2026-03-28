@@ -1,0 +1,249 @@
+:root {
+    --bg-main: #fff8ec;
+    --bg-alt: #ffe5c2;
+    --ink: #1f2333;
+    --ink-soft: #50556a;
+    --accent: #db4f2f;
+    --accent-dark: #9c2f19;
+    --surface: rgba(255, 255, 255, 0.82);
+    --border: rgba(31, 35, 51, 0.12);
+    --shadow: 0 20px 45px rgba(79, 52, 23, 0.18);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(circle at 12% 18%, #fff2dc 0%, #ffe0b3 36%, #ffd59f 62%, #ffc98f 100%);
+}
+
+.auth-screen {
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-screen {
+    padding: 24px;
+}
+
+.orb {
+    position: fixed;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    filter: blur(12px);
+    opacity: 0.28;
+    z-index: 0;
+    animation: float 8s ease-in-out infinite;
+}
+
+.orb-left {
+    background: #ff9a6d;
+    top: -80px;
+    left: -60px;
+}
+
+.orb-right {
+    background: #fdc767;
+    right: -70px;
+    bottom: -90px;
+    animation-delay: 1.2s;
+}
+
+.auth-card,
+.topbar,
+.panel {
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(5px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    border-radius: 18px;
+}
+
+.auth-card {
+    width: min(460px, 100%);
+    padding: 30px 28px;
+}
+
+.eyebrow {
+    margin: 0;
+    color: var(--accent-dark);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.headline {
+    margin: 8px 0 8px;
+    font-size: clamp(1.9rem, 3.6vw, 2.6rem);
+    line-height: 1.08;
+    font-family: "DM Serif Display", Georgia, serif;
+}
+
+.subhead {
+    margin: 0 0 18px;
+    color: var(--ink-soft);
+}
+
+.notice {
+    margin: 0 0 12px;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-weight: 500;
+    font-size: 0.92rem;
+}
+
+.notice.error {
+    background: #ffe8e2;
+    color: #7a1f11;
+}
+
+.notice.success {
+    background: #e7ffef;
+    color: #0f5b2d;
+}
+
+.auth-form {
+    display: grid;
+    gap: 10px;
+}
+
+label {
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 11px 12px;
+    font: inherit;
+    color: inherit;
+}
+
+input:focus {
+    outline: none;
+    border-color: #ef845f;
+    box-shadow: 0 0 0 3px rgba(239, 132, 95, 0.2);
+}
+
+.btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 11px 14px;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ef5a3c, #d83f1f 68%);
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(216, 63, 31, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #f0674a, #cb3414 68%);
+}
+
+.btn-ghost {
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--ink);
+}
+
+.helper {
+    margin: 14px 0 0;
+    color: var(--ink-soft);
+}
+
+.helper a {
+    color: var(--accent-dark);
+    font-weight: 700;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    padding: 22px;
+    margin-bottom: 18px;
+}
+
+.panel-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.panel {
+    padding: 20px;
+}
+
+.panel h2 {
+    margin: 0 0 8px;
+    font-family: "DM Serif Display", Georgia, serif;
+    font-size: 1.45rem;
+}
+
+.panel p {
+    margin: 0 0 14px;
+    color: var(--ink-soft);
+}
+
+.reveal {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: reveal 650ms ease forwards;
+}
+
+@keyframes reveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(10px);
+    }
+}
+
+@media (max-width: 640px) {
+    .auth-card {
+        padding: 24px 20px;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
