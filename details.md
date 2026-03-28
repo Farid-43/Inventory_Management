@@ -4,7 +4,7 @@ This document captures everything completed so far (Phase 1, Phase 2, Phase 3, P
 
 ## 1. Current Project Status
 
-- Current working branch: `develop`
+- Current working branch: `feature/rest-controllers`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
@@ -14,7 +14,8 @@ This document captures everything completed so far (Phase 1, Phase 2, Phase 3, P
   - Phase 5: Business logic, DTOs, and exception handling
   - Phase 6: REST controllers and role authorization
   - Phase 7: UI integration with Thymeleaf templates
-- Test status (latest local run): 19 passed, 0 failed
+  - Phase 7.1: System Polishing & Final Bug Fixes (Docker app, UI dark mode, Image Volume mounts, UX flows)
+- Test status (latest local run): 27 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -137,7 +138,7 @@ Why important:
 ## 4. Tests Executed So Far
 
 - Local test execution performed with the integrated runner.
-- Result: 19 tests passed, 0 failed.
+- Result: 27 tests passed, 0 failed.
 - Existing test classes currently include:
   - `InventoryManagementApplicationTests.java`
   - `InventoryDataJpaTests.java`
@@ -350,6 +351,8 @@ Files:
 - `src/main/resources/templates/login.html`
 - `src/main/resources/templates/register.html`
 - `src/main/resources/templates/dashboard.html`
+- `src/main/resources/templates/products.html`
+- `src/main/resources/templates/orders.html`
 - `src/main/resources/static/css/app.css`
 - `src/main/resources/static/js/register.js`
 - `src/test/java/com/example/inventory_management/controller/ControllerIntegrationTests.java`
@@ -357,23 +360,100 @@ Files:
 Implemented:
 
 - Added MVC page routes for `GET /login`, `GET /register`, and `GET /dashboard`.
+- Added MVC page routes for `GET /products`, `GET /orders`, and `GET /orders/me`.
 - Added form-based registration route `POST /register` connected to `AuthService`.
+- Added form-based UI handlers for creating products and placing orders from Thymeleaf pages.
 - Added custom Spring Security login page wiring and default post-login redirect to `/dashboard`.
-- Added Thymeleaf templates for login, registration, and dashboard views.
+- Added Thymeleaf templates for login, registration, dashboard, products, and orders views.
 - Integrated Thymeleaf Security Dialect (`sec:authorize`) on dashboard sections for role-specific UI visibility.
+- Rewired dashboard buttons from raw API routes (`/api/...`) to friendly UI routes (`/products`, `/orders`, `/orders/me`).
 - Added responsive CSS and lightweight client-side UX enhancement for registration submit state.
-- Added MockMvc integration tests to verify `login`, `register`, and `dashboard` return expected view names and `200 OK` for allowed access.
+- Added product image handling that accepts either uploaded files or external image URLs.
+- Added and expanded MockMvc integration tests to verify security behavior, controller routing, and role-based access checks.
 
 Validation performed:
 
 - Full test suite passed via `mvnw.cmd test`.
-- Test summary after Phase 7 additions: `19 tests run, 0 failures, 0 errors`.
+- Test summary after latest UI additions: `27 passed, 0 failed`.
 
 Why important:
 
 - Satisfies Phase 7 requirement for Thymeleaf pages and role-aware rendering.
 - Provides a usable UI entry point for the API features completed in earlier phases.
 - Keeps regression safety through integration testing of view routing and security behavior.
+
+## 6.6 System Polishing & Final Bug Fixes (Phase 7.1)
+
+Files:
+
+- `src/main/java/com/example/inventory_management/controller/ViewController.java`
+- `src/main/resources/templates/products.html`
+- `src/main/resources/templates/orders.html`
+- `src/main/resources/static/css/app.css`
+- `src/main/java/com/example/inventory_management/config/WebConfig.java`
+- `compose.yaml`
+
+Implemented fixes for all known edge cases:
+
+1. **Registration Error Handling**: Fixed `BadRequestException` falling through by catching it in the controller and cleanly redirecting back to `/register?error=...`. (No more Whitelabel Error Pages).
+2. **Missing `app` Service in Docker**: Included the Spring Boot application build inside `compose.yaml` (linked to `postgres` via `depends_on`, matching the `docker compose up --build` requirement).
+3. **Image Upload Paths Ignored by Auth**: Fixed static resource mappings (`/uploads/**`) so images correctly display without requiring specific authentication. Modified `WebConfig` and `compose.yaml` volume (`./uploads:/app/uploads`) to ensure Docker-persistable local storage.
+4. **Product Deletion in UI**: Added delete buttons to `products.html` wrapped in `sec:authorize="hasAnyRole('ADMIN','SELLER')"` to ensure feature parity with the REST layer.
+5. **@PreAuthorize Overhaul on ViewController**: Added strict `@PreAuthorize("hasAnyRole('ADMIN','SELLER')")` specifically to the POST product endpoint so standard buyers cannot forcefully create products if they bypass the UI.
+6. **Error Display on Register/Login**: Implemented responsive alert banners (using Thymeleaf) to display error params and validation failures inline.
+7. **Premium Dark Mode UI & UX**: Applied polished dark-mode responsive grid CSS (`app.css`) with strict width clamping (`minmax`), dynamic `<select>` dark-themed dropdown styling, image auto-scaling (`object-fit`), and intelligent UX logic (pre-selecting products automatically when clicking "Order").
+
+Validation performed:
+
+- All tests (27 total) remain green. No regression in logic.
+- UI validated natively and across Docker environments simultaneously.
+
+## 7.8 Phase 7 Specific Viva Questions and Answers
+
+### Q46. Why did you replace dashboard links to `/api/...` with UI routes?
+
+Answer idea:
+
+- Raw API endpoints return JSON, which is not user-friendly for demo/UI flow.
+- UI routes provide forms and tables so users can interact without external API tools.
+
+### Q47. Which new UI pages were added beyond login/register/dashboard?
+
+Answer idea:
+
+- Added `products.html` for inventory listing and add-product form.
+- Added `orders.html` for order placement and viewing order history.
+
+### Q48. How is role-based visibility enforced in the UI itself?
+
+Answer idea:
+
+- Thymeleaf Security Dialect uses `sec:authorize` on sections/buttons.
+- Example: create/manage product controls only render for `ADMIN` and `SELLER`.
+
+## 7.9 Flow-Based Viva Questions (Phase 7)
+
+### Q49. Explain the dashboard-to-products flow.
+
+Answer idea:
+
+1. User clicks the product section from dashboard and goes to `/products`.
+2. View controller resolves the authenticated username and role-aware page content.
+3. View controller loads product list from `ProductService`.
+4. Template renders product table and (for authorized roles) add-product form.
+5. Seller/admin can create a product with either an uploaded image file or an image URL link.
+6. On form submit, server creates product and redirects back with success flag.
+
+### Q50. Explain the dashboard-to-orders flow.
+
+Answer idea:
+
+1. User navigates to `/orders` or `/orders/me` from dashboard.
+2. Controller loads product options and relevant order list.
+3. User submits order form with product + quantity.
+4. Controller calls `OrderService.placeOrder` for current principal.
+5. Service validates stock, persists order, and updates inventory.
+6. UI redirects back with placed-success message and refreshed order list.
 
 ## 7. Likely Teacher Questions and Good Answers
 

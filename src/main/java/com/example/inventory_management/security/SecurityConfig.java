@@ -21,13 +21,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/login", "/register", "/forgot-password", "/api/auth/register", "/h2-console/**",
-                    "/css/**", "/js/**").permitAll()
+                        .requestMatchers("/", "/login", "/register", "/forgot-password",
+                                "/api/auth/register", "/h2-console/**",
+                                "/css/**", "/js/**", "/uploads/**")
+                        .permitAll()
                         .anyRequest().authenticated())
-            .formLogin(form -> form
-                .loginPage("/login")
-                .defaultSuccessUrl("/dashboard", true)
-                .permitAll())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/dashboard", true)
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll())
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/**"))
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 

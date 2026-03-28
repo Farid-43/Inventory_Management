@@ -8,6 +8,7 @@ public class ProductRequestDto {
     private String description;
     private BigDecimal price;
     private Integer stockQuantity;
+    private String imageUrl;
 
     public ProductRequestDto() {
     }
@@ -17,6 +18,15 @@ public class ProductRequestDto {
         this.description = description;
         this.price = price;
         this.stockQuantity = stockQuantity;
+    }
+
+    public ProductRequestDto(String name, String description, BigDecimal price, Integer stockQuantity,
+            String imageUrl) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.imageUrl = imageUrl;
     }
 
     public String getName() {
@@ -49,5 +59,13 @@ public class ProductRequestDto {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

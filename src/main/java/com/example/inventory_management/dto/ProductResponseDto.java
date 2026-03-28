@@ -9,6 +9,7 @@ public class ProductResponseDto {
     private String description;
     private BigDecimal price;
     private Integer stockQuantity;
+    private String imageUrl;
 
     public ProductResponseDto() {
     }
@@ -19,6 +20,16 @@ public class ProductResponseDto {
         this.description = description;
         this.price = price;
         this.stockQuantity = stockQuantity;
+    }
+
+    public ProductResponseDto(Long id, String name, String description, BigDecimal price, Integer stockQuantity,
+            String imageUrl) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.imageUrl = imageUrl;
     }
 
     public Long getId() {
@@ -59,5 +70,13 @@ public class ProductResponseDto {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

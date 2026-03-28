@@ -32,3 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 -e "\n### OS ###\n.DS_Store\n\n### Other ###\n*.log\n.env" 
+uploads/ 
