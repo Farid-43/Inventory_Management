@@ -1,13 +1,14 @@
 package com.example.inventory_management.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.example.inventory_management.dto.ProductRequestDto;
 import com.example.inventory_management.dto.ProductResponseDto;
 import com.example.inventory_management.exception.ResourceNotFoundException;
 import com.example.inventory_management.model.Product;
 import com.example.inventory_management.repository.ProductRepository;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class ProductService {
@@ -23,8 +24,8 @@ public class ProductService {
                 request.getName(),
                 request.getDescription(),
                 request.getPrice(),
-                request.getStockQuantity()
-        );
+                request.getStockQuantity());
+        product.setImageUrl(request.getImageUrl());
         Product saved = productRepository.save(product);
         return toResponse(saved);
     }
@@ -50,6 +51,9 @@ public class ProductService {
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setStockQuantity(request.getStockQuantity());
+        if (request.getImageUrl() != null && !request.getImageUrl().isBlank()) {
+            product.setImageUrl(request.getImageUrl());
+        }
 
         Product updated = productRepository.save(product);
         return toResponse(updated);
@@ -68,7 +72,7 @@ public class ProductService {
                 product.getName(),
                 product.getDescription(),
                 product.getPrice(),
-                product.getStockQuantity()
-        );
+                product.getStockQuantity(),
+                product.getImageUrl());
     }
 }

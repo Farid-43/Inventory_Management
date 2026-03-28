@@ -23,7 +23,7 @@ _Requirement Check:_ Branch protection configured, No direct push to main.
 - Repository created, collaborators invited, `main` branch protected.
 - `develop` branch initialized.
 
-## Phase 2: Dockerization & Base CI/CD Pipeline
+## Phase 2: Dockerization & Base CI/CD Pipeline (Status: Complete)
 
 _Requirement Check:_ Dockerfile, GitHub Actions, Postgres Docker Compose.
 
@@ -94,9 +94,11 @@ _Requirement Check:_ Thymeleaf, Complete App Flow.
 - **Assignee:** Member 2
 - **Branch:** `feature/ui-templates`
 - **Task Details:**
-  1. Create UI views: `login.html`, `register.html`, `dashboard.html`.
+  1. Create UI views: `login.html`, `register.html`, `dashboard.html`, `products.html`, and `orders.html`.
   2. Integrate Thymeleaf Security Dialect for role-based UI rendering.
-  3. **Testing:** Add/update `MockMvc` tests to ensure the endpoints return the correct view names and HTTP status codes (200 OK).
+  3. Wire dashboard actions to UI routes (`/products`, `/orders`, `/orders/me`) instead of raw API JSON endpoints.
+  4. Support product image input via uploaded file or external image URL link.
+- **Testing:** Add/update `MockMvc` tests to ensure endpoints return expected status codes and role behavior remains correct.
 - **Git Action:** Phase implementation completed on `feature/ui-templates`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
 ## Phase 8: Automated Cloud Deployment (CD)

@@ -1,0 +1,163 @@
+<!doctype html>
+<html
+  lang="en"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Orders | Inventory Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" th:href="@{/css/app.css(v=5)}" />
+  </head>
+  <body class="app-screen">
+    <header class="app-header fade-in">
+      <div class="header-left">
+        <span class="brand">📦 Inventory Console</span>
+      </div>
+      <div class="header-right">
+        <a class="btn btn-ghost btn-sm" th:href="@{/dashboard}">← Dashboard</a>
+        <span class="user-badge">
+          <span
+            class="avatar"
+            th:text="${#strings.toUpperCase(#strings.substring(username, 0, 1))}"
+            >U</span
+          >
+          <span th:text="${username}">user</span>
+        </span>
+        <form th:action="@{/logout}" method="post" style="display: inline">
+          <input
+            type="hidden"
+            th:name="${_csrf.parameterName}"
+            th:value="${_csrf.token}"
+          />
+          <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="page-header fade-in">
+        <h1 class="page-title" th:text="${title}">Orders</h1>
+        <p class="page-subtitle">
+          Welcome, <span th:text="${username}">user</span>
+        </p>
+      </div>
+
+      <div class="content-grid two-col fade-in fade-in-delay">
+        <!-- Place Order Form -->
+        <section class="panel">
+          <h2>Place Order</h2>
+          <p class="panel-desc">
+            Select a product and quantity to create a new order.
+          </p>
+
+          <div th:if="${placed}" class="alert alert-success">
+            Order placed successfully!
+          </div>
+          <div
+            th:if="${error}"
+            class="alert alert-error"
+            th:text="${error}"
+          ></div>
+
+          <form class="form-stack" th:action="@{/orders}" method="post">
+            <input
+              type="hidden"
+              th:name="${_csrf.parameterName}"
+              th:value="${_csrf.token}"
+            />
+
+            <div class="form-group">
+              <label for="productId">Product</label>
+              <select id="productId" name="productId" required>
+                <option
+                  value=""
+                  th:selected="${preselectedProductId == null}"
+                  disabled
+                >
+                  Select a product
+                </option>
+                <option
+                  th:each="product : ${products}"
+                  th:value="${product.id}"
+                  th:text="${product.name + ' — $' + product.price + ' (stock: ' + product.stockQuantity + ')'}"
+                  th:selected="${preselectedProductId == product.id}"
+                >
+                  Product
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="quantity">Quantity</label>
+              <input
+                id="quantity"
+                name="quantity"
+                type="number"
+                min="1"
+                placeholder="1"
+                th:value="${preselectedQuantity != null ? preselectedQuantity : 1}"
+                required
+              />
+            </div>
+
+            <button class="btn btn-primary btn-full" type="submit">
+              Place Order
+            </button>
+          </form>
+        </section>
+
+        <!-- Order History -->
+        <section class="panel">
+          <h2>Order History</h2>
+          <p class="panel-desc">Records from the database.</p>
+
+          <div class="table-wrap" th:if="${!#lists.isEmpty(orders)}">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>User</th>
+                  <th>Total</th>
+                  <th>Items</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="order : ${orders}">
+                  <td th:text="'#' + ${order.id}">1</td>
+                  <td
+                    th:text="${#temporals.format(order.orderDate, 'MMM dd, yyyy HH:mm')}"
+                  >
+                    Jan 01, 2026
+                  </td>
+                  <td th:text="${order.username}">buyer</td>
+                  <td>$<span th:text="${order.totalAmount}">0.00</span></td>
+                  <td>
+                    <span
+                      class="badge badge-stock"
+                      th:text="${#lists.size(order.items)} + ' item(s)'"
+                      >0 item(s)</span
+                    >
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" th:if="${#lists.isEmpty(orders)}">
+            <div class="empty-icon">📭</div>
+            <p>No orders yet. Place one using the form.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
