@@ -1,10 +1,10 @@
 # Progress Details: Inventory Management Project
 
-This document captures everything completed so far (Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6), including technical decisions, workflow rules, and likely teacher viva questions.
+This document captures everything completed so far (Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7), including technical decisions, workflow rules, and likely teacher viva questions.
 
 ## 1. Current Project Status
 
-- Current working branch: `feature/rest-controllers`
+- Current working branch: `develop`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
@@ -13,7 +13,8 @@ This document captures everything completed so far (Phase 1, Phase 2, Phase 3, P
   - Phase 4: Foundational Spring Security
   - Phase 5: Business logic, DTOs, and exception handling
   - Phase 6: REST controllers and role authorization
-- Test status (latest local run): 22 passed, 0 failed
+  - Phase 7: UI integration with Thymeleaf templates
+- Test status (latest local run): 19 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -136,7 +137,7 @@ Why important:
 ## 4. Tests Executed So Far
 
 - Local test execution performed with the integrated runner.
-- Result: 22 tests passed, 0 failed.
+- Result: 19 tests passed, 0 failed.
 - Existing test classes currently include:
   - `InventoryManagementApplicationTests.java`
   - `InventoryDataJpaTests.java`
@@ -162,7 +163,7 @@ This is exactly the behavior your teacher requested.
 
 ## 6. What Is Not Done Yet
 
-- Phase 7 onwards (UI, deployment, final docs/demo) are pending.
+- Phase 8 onwards (deployment, final docs/demo) are pending.
 
 ## 6.1 Phase 3 Completed Work (Entities + Repositories + DB Config)
 
@@ -340,6 +341,40 @@ Why important:
 - Establishes API layer contract for upcoming UI integration in Phase 7.
 - Catches access-control regressions early using integration tests.
 
+## 6.5 Phase 7 Completed Work (UI Integration with Thymeleaf)
+
+Files:
+
+- `src/main/java/com/example/inventory_management/controller/ViewController.java`
+- `src/main/java/com/example/inventory_management/security/SecurityConfig.java`
+- `src/main/resources/templates/login.html`
+- `src/main/resources/templates/register.html`
+- `src/main/resources/templates/dashboard.html`
+- `src/main/resources/static/css/app.css`
+- `src/main/resources/static/js/register.js`
+- `src/test/java/com/example/inventory_management/controller/ControllerIntegrationTests.java`
+
+Implemented:
+
+- Added MVC page routes for `GET /login`, `GET /register`, and `GET /dashboard`.
+- Added form-based registration route `POST /register` connected to `AuthService`.
+- Added custom Spring Security login page wiring and default post-login redirect to `/dashboard`.
+- Added Thymeleaf templates for login, registration, and dashboard views.
+- Integrated Thymeleaf Security Dialect (`sec:authorize`) on dashboard sections for role-specific UI visibility.
+- Added responsive CSS and lightweight client-side UX enhancement for registration submit state.
+- Added MockMvc integration tests to verify `login`, `register`, and `dashboard` return expected view names and `200 OK` for allowed access.
+
+Validation performed:
+
+- Full test suite passed via `mvnw.cmd test`.
+- Test summary after Phase 7 additions: `19 tests run, 0 failures, 0 errors`.
+
+Why important:
+
+- Satisfies Phase 7 requirement for Thymeleaf pages and role-aware rendering.
+- Provides a usable UI entry point for the API features completed in earlier phases.
+- Keeps regression safety through integration testing of view routing and security behavior.
+
 ## 7. Likely Teacher Questions and Good Answers
 
 ### Q1. What branch protection did you use and why?
@@ -407,7 +442,7 @@ Answer idea:
 Answer idea:
 
 - Yes, our workflow requires adding relevant tests in each feature PR.
-- Current baseline tests pass (11/11).
+- Current baseline tests pass (19/19).
 
 ## 7.1 Phase 3 Specific Viva Questions and Answers
 
@@ -625,7 +660,7 @@ Answer idea:
 
 Answer idea:
 
-1. Controller (future Phase 6) receives registration payload and passes `UserRegistrationDto` to `AuthService`.
+1. Controller receives registration payload and passes `UserRegistrationDto` to `AuthService`.
 2. `AuthService` validates username and email uniqueness via `UserRepository`.
 3. Password is encoded using `PasswordEncoder`.
 4. Default role `BUYER` is loaded from `RoleRepository` or created if absent.
@@ -717,6 +752,6 @@ Answer idea:
 
 ## 8. Recommended Next Action (Immediately After This)
 
-- Open PR from `feature/rest-controllers` to `develop` for Phase 6 changes.
+- Open PR from `feature/ui-templates` to `develop` for Phase 7 changes.
 - Ensure CI is green, get teammate review approval, and merge.
-- Start Phase 7 on a fresh branch from updated `develop`.
+- Start Phase 8 on a fresh branch from updated `develop`.

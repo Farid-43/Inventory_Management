@@ -87,7 +87,7 @@ _Requirement Check:_ 3 Controllers, Roles enforced (ADMIN, SELLER, BUYER), REST 
   3. **Testing:** Write Integration Tests using `@SpringBootTest` and `MockMvc` to verify endpoint routing, DTO validation, and security access.
 - **Git Action:** Phase implementation completed on `feature/rest-controllers`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 7: UI Integration (Thymeleaf Templates)
+## Phase 7: UI Integration (Thymeleaf Templates) (Status: Complete)
 
 _Requirement Check:_ Thymeleaf, Complete App Flow.
 
@@ -97,7 +97,7 @@ _Requirement Check:_ Thymeleaf, Complete App Flow.
   1. Create UI views: `login.html`, `register.html`, `dashboard.html`.
   2. Integrate Thymeleaf Security Dialect for role-based UI rendering.
   3. **Testing:** Add/update `MockMvc` tests to ensure the endpoints return the correct view names and HTTP status codes (200 OK).
-- **Git Action:** Push PR. CI runs. Member 1 reviews and merges.
+- **Git Action:** Phase implementation completed on `feature/ui-templates`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
 ## Phase 8: Automated Cloud Deployment (CD)
 
