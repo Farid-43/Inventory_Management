@@ -260,6 +260,23 @@ select option {
 .badge-low { background:rgba(251,191,36,0.12); color:#fbbf24; }
 .badge-out { background:var(--error-bg); color:var(--error); }
 
+.order-item-list {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+}
+
+.order-item-pill {
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:999px;
+    border:1px solid var(--glass-border);
+    background:rgba(99,102,241,0.09);
+    color:var(--text-secondary);
+    font-size:.76rem;
+    font-weight:600;
+}
+
 .empty-state {
     text-align:center; padding:40px 20px; color:var(--text-muted);
 }

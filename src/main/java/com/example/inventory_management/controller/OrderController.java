@@ -5,7 +5,10 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,13 +31,13 @@ public class OrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('ADMIN','SELLER','BUYER')")
+    @PreAuthorize("hasRole('BUYER')")
     public OrderResponseDto placeOrder(@RequestBody OrderCreateRequestDto request, Principal principal) {
         return orderService.placeOrder(principal.getName(), request);
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasAnyRole('ADMIN','SELLER','BUYER')")
+    @PreAuthorize("hasRole('BUYER')")
     public List<OrderResponseDto> getMyOrders(Principal principal) {
         return orderService.getOrdersForUser(principal.getName());
     }
@@ -43,5 +46,14 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     public List<OrderResponseDto> getAllOrders() {
         return orderService.getAllOrders();
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER')")
+    public void cancelOrder(@PathVariable Long id, Principal principal, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+        orderService.cancelOrder(id, principal.getName(), isAdmin);
     }
 }

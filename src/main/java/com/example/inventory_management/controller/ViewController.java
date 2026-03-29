@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +22,9 @@ import com.example.inventory_management.dto.OrderItemRequestDto;
 import com.example.inventory_management.dto.ProductRequestDto;
 import com.example.inventory_management.dto.UserRegistrationDto;
 import com.example.inventory_management.exception.BadRequestException;
+import com.example.inventory_management.model.User;
+import com.example.inventory_management.repository.RoleRepository;
+import com.example.inventory_management.repository.UserRepository;
 import com.example.inventory_management.service.AuthService;
 import com.example.inventory_management.service.ImageStorageService;
 import com.example.inventory_management.service.OrderService;
@@ -32,15 +37,21 @@ public class ViewController {
     private final ProductService productService;
     private final OrderService orderService;
     private final ImageStorageService imageStorageService;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
     public ViewController(AuthService authService,
             ProductService productService,
             OrderService orderService,
-            ImageStorageService imageStorageService) {
+            ImageStorageService imageStorageService,
+            UserRepository userRepository,
+            RoleRepository roleRepository) {
         this.authService = authService;
         this.productService = productService;
         this.orderService = orderService;
         this.imageStorageService = imageStorageService;
+        this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
 
     @GetMapping("/")
@@ -74,9 +85,10 @@ public class ViewController {
     @PostMapping("/register")
     public String registerUser(@RequestParam String username,
             @RequestParam String email,
-            @RequestParam String password) {
+            @RequestParam String password,
+            @RequestParam(value = "role", required = false) String role) {
         try {
-            authService.registerUser(new UserRegistrationDto(username, email, password));
+            authService.registerUser(new UserRegistrationDto(username, email, password, role));
             return "redirect:/login?registered";
         } catch (BadRequestException ex) {
             return "redirect:/register?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
@@ -99,7 +111,47 @@ public class ViewController {
         } catch (Exception e) {
             model.addAttribute("myOrderCount", 0);
         }
+        try {
+            model.addAttribute("allOrderCount", orderService.getAllOrders().size());
+        } catch (Exception e) {
+            model.addAttribute("allOrderCount", 0);
+        }
+        try {
+            model.addAttribute("roleCount", roleRepository.count());
+        } catch (Exception e) {
+            model.addAttribute("roleCount", 0);
+        }
+        try {
+            model.addAttribute("userCount", userRepository.count());
+        } catch (Exception e) {
+            model.addAttribute("userCount", 0);
+        }
+        try {
+            model.addAttribute("adminUserCount", userRepository.countByRoles_Name("ADMIN"));
+            model.addAttribute("sellerUserCount", userRepository.countByRoles_Name("SELLER"));
+            model.addAttribute("buyerUserCount", userRepository.countByRoles_Name("BUYER"));
+        } catch (Exception e) {
+            model.addAttribute("adminUserCount", 0);
+            model.addAttribute("sellerUserCount", 0);
+            model.addAttribute("buyerUserCount", 0);
+        }
         return "dashboard";
+    }
+
+    @GetMapping("/admin/users")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String adminUsers(Model model, Principal principal) {
+        List<User> users = userRepository.findAll().stream()
+                .sorted(Comparator.comparing(User::getUsername))
+                .toList();
+
+        model.addAttribute("username", principal.getName());
+        model.addAttribute("users", users);
+        model.addAttribute("totalUsers", users.size());
+        model.addAttribute("adminUserCount", userRepository.countByRoles_Name("ADMIN"));
+        model.addAttribute("sellerUserCount", userRepository.countByRoles_Name("SELLER"));
+        model.addAttribute("buyerUserCount", userRepository.countByRoles_Name("BUYER"));
+        return "admin-users";
     }
 
     @GetMapping("/products")
@@ -171,11 +223,20 @@ public class ViewController {
     }
 
     @GetMapping("/orders/me")
+    @PreAuthorize("hasAnyRole('ADMIN','SELLER','BUYER')")
     public String myOrders(Model model, Principal principal,
+            Authentication authentication,
             @RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "placed", required = false) String placed,
             @RequestParam(value = "productId", required = false) Long productId,
             @RequestParam(value = "quantity", required = false) Integer quantity) {
+        boolean isBuyer = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_BUYER".equals(authority.getAuthority()));
+
+        if (!isBuyer) {
+            return "redirect:/orders";
+        }
+
         model.addAttribute("username", principal.getName());
         model.addAttribute("orders", orderService.getOrdersForUser(principal.getName()));
         model.addAttribute("products", productService.getAllProducts());
@@ -188,6 +249,7 @@ public class ViewController {
     }
 
     @PostMapping("/orders")
+    @PreAuthorize("hasRole('BUYER')")
     public String placeOrder(@RequestParam Long productId,
             @RequestParam Integer quantity,
             Principal principal) {

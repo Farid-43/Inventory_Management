@@ -1,10 +1,10 @@
 # Progress Details: Inventory Management Project
 
-This document captures everything completed so far (Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7), including technical decisions, workflow rules, and likely teacher viva questions.
+This document captures everything completed so far (Phase 1 through Phase 7, plus later iterative fixes and enhancements), including technical decisions, workflow rules, and likely teacher viva questions.
 
 ## 1. Current Project Status
 
-- Current working branch: `feature/rest-controllers`
+- Current working branch: `feature/ui-templates`
 - Planning style in use: Shift-Left DevOps
 - Completed phases:
   - Phase 1: GitHub setup and branch strategy
@@ -15,7 +15,8 @@ This document captures everything completed so far (Phase 1, Phase 2, Phase 3, P
   - Phase 6: REST controllers and role authorization
   - Phase 7: UI integration with Thymeleaf templates
   - Phase 7.1: System Polishing & Final Bug Fixes (Docker app, UI dark mode, Image Volume mounts, UX flows)
-- Test status (latest local run): 27 passed, 0 failed
+  - Phase 7.2: Role and workflow refinements (admin/seller separation, registration role choice, order cancellation, additional tests)
+- Test status (latest local run): 44 passed, 0 failed
 
 ## 2. Phase 1 Completed Work (GitHub Governance)
 
@@ -138,13 +139,14 @@ Why important:
 ## 4. Tests Executed So Far
 
 - Local test execution performed with the integrated runner.
-- Result: 27 tests passed, 0 failed.
+- Result: 44 tests passed, 0 failed.
 - Existing test classes currently include:
   - `InventoryManagementApplicationTests.java`
   - `InventoryDataJpaTests.java`
   - `CustomUserDetailsServiceTest.java`
   - `AuthServiceTest.java`
   - `ProductServiceTest.java`
+  - `OrderServiceTest.java`
   - `ControllerIntegrationTests.java`
 
 ## 5. Workflow You Are Following Now
@@ -319,8 +321,9 @@ Implemented:
 - Enforced role-based authorization with `@PreAuthorize`:
   - Product create/update/delete: `ADMIN` or `SELLER`.
   - Product read endpoints: authenticated `ADMIN`/`SELLER`/`BUYER`.
-  - Order placement and own-order history: authenticated `ADMIN`/`SELLER`/`BUYER`.
+  - Order placement and own-order history: `BUYER` only.
   - All-orders endpoint: `ADMIN` or `SELLER`.
+  - Order cancellation endpoint: `BUYER` (own orders) and `ADMIN` (any order).
 - Added `OrderService` business logic for placing and listing orders:
   - Validates item quantity and stock.
   - Decrements stock on successful order placement.
@@ -408,6 +411,61 @@ Validation performed:
 - All tests (27 total) remain green. No regression in logic.
 - UI validated natively and across Docker environments simultaneously.
 
+## 6.7 Post-Phase 7.1 Iterative Updates (Latest)
+
+Files:
+
+- `src/main/java/com/example/inventory_management/controller/OrderController.java`
+- `src/main/java/com/example/inventory_management/service/OrderService.java`
+- `src/main/java/com/example/inventory_management/service/AuthService.java`
+- `src/main/java/com/example/inventory_management/dto/UserRegistrationDto.java`
+- `src/main/java/com/example/inventory_management/repository/UserRepository.java`
+- `src/main/java/com/example/inventory_management/controller/ViewController.java`
+- `src/main/resources/templates/dashboard.html`
+- `src/main/resources/templates/orders.html`
+- `src/main/resources/templates/register.html`
+- `src/main/resources/templates/admin-users.html`
+- `src/test/java/com/example/inventory_management/service/OrderServiceTest.java`
+- `src/test/java/com/example/inventory_management/service/AuthServiceTest.java`
+- `src/test/java/com/example/inventory_management/controller/ControllerIntegrationTests.java`
+
+Implemented:
+
+1. **Order cancellation endpoint added**
+
+- Added `DELETE /api/orders/{id}`.
+- Authorization: `BUYER` and `ADMIN`.
+- Business rule: buyer can cancel only own orders; admin can cancel any order.
+- Cancellation restores stock before deleting order.
+
+2. **Buyer/Seller/Admin order behavior clarified**
+
+- Buyer can place orders (API + MVC form).
+- Seller/Admin monitor all orders but do not place purchases from UI/API flow.
+- `/orders/me` redirects seller/admin to `/orders` monitoring page.
+
+3. **Admin capabilities expanded beyond seller**
+
+- Added admin-only `/admin/users` page.
+- Added role-distribution metrics and user counts to dashboard/admin views.
+
+4. **Registration role selection and validation tightened**
+
+- Registration now supports explicit self-signup role selection (`BUYER` or `SELLER`).
+- `ADMIN` self-registration is explicitly rejected.
+- API and MVC registration paths are aligned with same rule set.
+
+5. **Tests expanded for new rules**
+
+- New `OrderServiceTest` covers placement validations and cancel-order ownership/admin paths.
+- `ControllerIntegrationTests` expanded with order-cancel role checks and stock-restore verification.
+- `AuthServiceTest` expanded for seller-role signup and admin-role rejection.
+
+Validation performed:
+
+- Latest full run: `mvnw.cmd test`
+- Result: 44 tests passed, 0 failed, 0 errors.
+
 ## 7.8 Phase 7 Specific Viva Questions and Answers
 
 ### Q46. Why did you replace dashboard links to `/api/...` with UI routes?
@@ -454,6 +512,57 @@ Answer idea:
 4. Controller calls `OrderService.placeOrder` for current principal.
 5. Service validates stock, persists order, and updates inventory.
 6. UI redirects back with placed-success message and refreshed order list.
+
+## 7.10 Post-Update Viva Questions and Answers
+
+### Q51. Why was order cancellation added, and who can use it?
+
+Answer idea:
+
+- Added to make second-entity CRUD coverage explicit and aligned with inventory lifecycle.
+- `BUYER` can cancel only own orders.
+- `ADMIN` can cancel any order for operational control.
+- `SELLER` remains monitoring-focused and cannot cancel in current policy.
+
+### Q52. How is admin now clearly different from seller?
+
+Answer idea:
+
+- Both can manage products and monitor all orders.
+- Only admin can access `/admin/users` and role-distribution insights.
+- Admin can cancel any order; seller cannot.
+
+### Q53. How is registration role abuse prevented?
+
+Answer idea:
+
+- Registration accepts only `BUYER` or `SELLER` role requests.
+- Service normalizes input and rejects other roles (including `ADMIN`) with `BadRequestException`.
+- Same rule applies for REST registration and MVC form registration.
+
+## 7.11 Post-Update Flow Questions
+
+### Q54. Explain the order cancellation flow end-to-end.
+
+Answer idea:
+
+1. Client calls `DELETE /api/orders/{id}`.
+2. `@PreAuthorize` allows only `BUYER` or `ADMIN`.
+3. Controller detects whether requester has admin authority.
+4. Service loads the order and enforces ownership/admin policy.
+5. For each order item, stock is incremented back.
+6. Order is deleted, API returns `204 No Content`.
+
+### Q55. Explain the buyer quick-order flow from product cards.
+
+Answer idea:
+
+1. Buyer clicks Order on a product card from `/products`.
+2. UI sends `productId` and `quantity` as query params to `/orders/me`.
+3. Controller injects those values as preselected fields in the order form.
+4. Buyer confirms and submits.
+5. Order service validates stock and persists transaction.
+6. UI redirects with placed status and updated history.
 
 ## 7. Likely Teacher Questions and Good Answers
 
@@ -522,7 +631,7 @@ Answer idea:
 Answer idea:
 
 - Yes, our workflow requires adding relevant tests in each feature PR.
-- Current baseline tests pass (19/19).
+- Current baseline tests pass (44/44).
 
 ## 7.1 Phase 3 Specific Viva Questions and Answers
 
@@ -603,9 +712,9 @@ Answer idea:
 
 Answer idea:
 
-- `/register` is public by design for account creation.
-- `/h2-console/**` is public only for local development/testing convenience.
-- All other endpoints require login.
+- Public routes include: `/`, `/login`, `/register`, `/forgot-password`, `/api/auth/register`, and `/h2-console/**`.
+- Static resources `/css/**`, `/js/**`, and `/uploads/**` are public.
+- All other application routes require authentication.
 
 ### Q22. Why is CSRF ignored for H2 console only?
 
@@ -625,9 +734,10 @@ Answer idea:
 
 Answer idea:
 
-- Registration/login flows with encoded password persistence.
-- Role-based endpoint restrictions with `@PreAuthorize` in controllers.
-- Proper exception handling and potentially JWT/session-hardening based on architecture choice.
+- Remove hardcoded credentials from compose/app runtime config and move fully to environment-managed secrets.
+- Define stricter production CSRF/session policy for API and browser clients.
+- Replace placeholder forgot-password behavior with token-based reset flow.
+- Add operational controls (audit trail, rate limiting, and account lockout strategy).
 
 ## 7.3 Flow-Based Viva Questions (Up To Phase 4)
 
@@ -711,7 +821,8 @@ Answer idea:
 - Handles registration business rules.
 - Checks duplicate username and email.
 - Encodes password using configured encoder.
-- Assigns default `BUYER` role (creates role if missing).
+- Assigns requested self-signup role (`BUYER` or `SELLER`) with validation.
+- Rejects invalid self-signup roles (for example `ADMIN`).
 
 ### Q33. Why use `@ControllerAdvice` now before controllers?
 
@@ -743,9 +854,10 @@ Answer idea:
 1. Controller receives registration payload and passes `UserRegistrationDto` to `AuthService`.
 2. `AuthService` validates username and email uniqueness via `UserRepository`.
 3. Password is encoded using `PasswordEncoder`.
-4. Default role `BUYER` is loaded from `RoleRepository` or created if absent.
-5. Role is attached to user and user is persisted via `UserRepository`.
-6. On validation failure, `BadRequestException` is thrown and mapped by `GlobalExceptionHandler`.
+4. Role is normalized and validated (`BUYER`/`SELLER` only for self-signup).
+5. Role is loaded from `RoleRepository` or created if absent, then attached to user.
+6. User is persisted via `UserRepository`.
+7. On validation failure, `BadRequestException` is thrown and mapped by `GlobalExceptionHandler`.
 
 ### Q37. Explain the product update flow in `ProductService`.
 
@@ -813,7 +925,7 @@ Answer idea:
 
 Answer idea:
 
-1. Authenticated user calls `POST /api/orders` with item list.
+1. Authenticated buyer calls `POST /api/orders` with item list.
 2. Controller reads username from `Principal` and calls `OrderService.placeOrder`.
 3. Service validates request, loads user and products, checks stock.
 4. Service creates `CustomerOrder` and `OrderItem` entities.
@@ -832,6 +944,7 @@ Answer idea:
 
 ## 8. Recommended Next Action (Immediately After This)
 
-- Open PR from `feature/ui-templates` to `develop` for Phase 7 changes.
-- Ensure CI is green, get teammate review approval, and merge.
-- Start Phase 8 on a fresh branch from updated `develop`.
+- Add final `README.md` deliverable (architecture/ER/API/run/deploy sections).
+- Add deployment workflow for Render from `main` after tests pass.
+- Replace hardcoded DB credentials in `compose.yaml` with env expansion + `.env.example`.
+- Capture final demo-proof checklist (branch protection, CI required checks, public deploy URL).

@@ -3,6 +3,7 @@ package com.example.inventory_management.service;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,6 +84,24 @@ public class OrderService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderId, String requesterUsername, boolean isAdmin) {
+        CustomerOrder order = customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        boolean isOwner = order.getUser().getUsername().equals(requesterUsername);
+        if (!isAdmin && !isOwner) {
+            throw new AccessDeniedException("You can only cancel your own orders");
+        }
+
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+        }
+
+        customerOrderRepository.delete(order);
     }
 
     private OrderResponseDto toResponse(CustomerOrder order) {
