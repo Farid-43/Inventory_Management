@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" th:href="@{/css/app.css(v=5)}" />
+    <link rel="stylesheet" th:href="@{/css/app.css(v=6)}" />
   </head>
   <body class="app-screen">
     <header class="app-header fade-in">
@@ -51,8 +51,8 @@
       </div>
 
       <div class="content-grid two-col fade-in fade-in-delay">
-        <!-- Place Order Form -->
-        <section class="panel">
+        <!-- Place Order Form (Buyer Only) -->
+        <section class="panel" sec:authorize="hasRole('BUYER')">
           <h2>Place Order</h2>
           <p class="panel-desc">
             Select a product and quantity to create a new order.
@@ -114,6 +114,18 @@
           </form>
         </section>
 
+        <!-- Seller/Admin view -->
+        <section class="panel" sec:authorize="hasAnyRole('ADMIN','SELLER')">
+          <h2>Orders Monitoring</h2>
+          <p class="panel-desc">
+            Seller/Admin accounts can monitor customer orders but cannot place
+            purchases.
+          </p>
+          <div class="alert alert-success" style="margin-bottom: 0">
+            Use a buyer account to place new orders.
+          </div>
+        </section>
+
         <!-- Order History -->
         <section class="panel">
           <h2>Order History</h2>
@@ -126,8 +138,8 @@
                   <th>ID</th>
                   <th>Date</th>
                   <th>User</th>
+                  <th>Products</th>
                   <th>Total</th>
-                  <th>Items</th>
                 </tr>
               </thead>
               <tbody>
@@ -139,14 +151,26 @@
                     Jan 01, 2026
                   </td>
                   <td th:text="${order.username}">buyer</td>
-                  <td>$<span th:text="${order.totalAmount}">0.00</span></td>
                   <td>
+                    <div
+                      class="order-item-list"
+                      th:if="${!#lists.isEmpty(order.items)}"
+                    >
+                      <span
+                        class="order-item-pill"
+                        th:each="item : ${order.items}"
+                        th:text="${item.productName + ' x' + item.quantity}"
+                      >
+                        Product x1
+                      </span>
+                    </div>
                     <span
-                      class="badge badge-stock"
-                      th:text="${#lists.size(order.items)} + ' item(s)'"
-                      >0 item(s)</span
+                      th:if="${#lists.isEmpty(order.items)}"
+                      style="color: var(--text-muted)"
+                      >—</span
                     >
                   </td>
+                  <td>$<span th:text="${order.totalAmount}">0.00</span></td>
                 </tr>
               </tbody>
             </table>
@@ -154,7 +178,12 @@
 
           <div class="empty-state" th:if="${#lists.isEmpty(orders)}">
             <div class="empty-icon">📭</div>
-            <p>No orders yet. Place one using the form.</p>
+            <p sec:authorize="hasRole('BUYER')">
+              No orders yet. Place one using the form.
+            </p>
+            <p sec:authorize="hasAnyRole('ADMIN','SELLER')">
+              No customer orders have been placed yet.
+            </p>
           </div>
         </section>
       </div>

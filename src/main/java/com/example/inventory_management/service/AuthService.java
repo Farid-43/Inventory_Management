@@ -1,18 +1,23 @@
 package com.example.inventory_management.service;
 
+import java.util.Locale;
+import java.util.Set;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.example.inventory_management.dto.UserRegistrationDto;
 import com.example.inventory_management.exception.BadRequestException;
 import com.example.inventory_management.model.Role;
 import com.example.inventory_management.model.User;
 import com.example.inventory_management.repository.RoleRepository;
 import com.example.inventory_management.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
 
     private static final String DEFAULT_ROLE = "BUYER";
+    private static final Set<String> ALLOWED_SELF_SIGNUP_ROLES = Set.of("BUYER", "SELLER");
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -32,14 +37,22 @@ public class AuthService {
             throw new BadRequestException("Email already exists");
         }
 
+        String requestedRole = registrationDto.getRole();
+        String roleToAssign = (requestedRole == null || requestedRole.isBlank())
+                ? DEFAULT_ROLE
+                : requestedRole.trim().toUpperCase(Locale.ROOT);
+
+        if (!ALLOWED_SELF_SIGNUP_ROLES.contains(roleToAssign)) {
+            throw new BadRequestException("Only BUYER or SELLER accounts can be self-registered");
+        }
+
         User user = new User(
                 registrationDto.getUsername(),
                 registrationDto.getEmail(),
-                passwordEncoder.encode(registrationDto.getPassword())
-        );
+                passwordEncoder.encode(registrationDto.getPassword()));
 
-        Role defaultRole = roleRepository.findByName(DEFAULT_ROLE)
-                .orElseGet(() -> roleRepository.save(new Role(DEFAULT_ROLE)));
+        Role defaultRole = roleRepository.findByName(roleToAssign)
+                .orElseGet(() -> roleRepository.save(new Role(roleToAssign)));
 
         user.addRole(defaultRole);
         return userRepository.save(user);

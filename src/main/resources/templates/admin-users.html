@@ -1,0 +1,126 @@
+<!doctype html>
+<html
+  lang="en"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Management | Inventory Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" th:href="@{/css/app.css(v=7)}" />
+  </head>
+  <body class="app-screen">
+    <header class="app-header fade-in">
+      <div class="header-left">
+        <span class="brand">Inventory Console</span>
+      </div>
+      <div class="header-right">
+        <a class="btn btn-ghost btn-sm" th:href="@{/dashboard}">Dashboard</a>
+        <span class="user-badge">
+          <span
+            class="avatar"
+            th:text="${#strings.toUpperCase(#strings.substring(username, 0, 1))}"
+            >U</span
+          >
+          <span th:text="${username}">admin</span>
+        </span>
+        <form th:action="@{/logout}" method="post" style="display: inline">
+          <input
+            type="hidden"
+            th:name="${_csrf.parameterName}"
+            th:value="${_csrf.token}"
+          />
+          <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="page-header fade-in">
+        <h1 class="page-title">User Management</h1>
+        <p class="page-subtitle">
+          Admin-only visibility into registered users and assigned roles.
+        </p>
+      </div>
+
+      <div class="stats-row fade-in fade-in-delay">
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <span class="stat-value" th:text="${totalUsers}">0</span>
+            <span class="stat-label">Total Users</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👑</div>
+          <div class="stat-info">
+            <span class="stat-value" th:text="${adminUserCount}">0</span>
+            <span class="stat-label">Admins</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏷️</div>
+          <div class="stat-info">
+            <span class="stat-value" th:text="${sellerUserCount}">0</span>
+            <span class="stat-label">Sellers</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛍️</div>
+          <div class="stat-info">
+            <span class="stat-value" th:text="${buyerUserCount}">0</span>
+            <span class="stat-label">Buyers</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="panel fade-in fade-in-delay-2">
+        <h2>Registered Accounts</h2>
+        <p class="panel-desc">All active users in the system.</p>
+
+        <div class="table-wrap" th:if="${!#lists.isEmpty(users)}">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Roles</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="account : ${users}">
+                <td th:text="'#' + ${account.id}">#1</td>
+                <td th:text="${account.username}">username</td>
+                <td th:text="${account.email}">email@example.com</td>
+                <td>
+                  <div class="order-item-list">
+                    <span
+                      class="order-item-pill"
+                      th:each="role : ${account.roles}"
+                      th:text="${role.name}"
+                    >
+                      ROLE
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(users)}">
+          <div class="empty-icon">📭</div>
+          <p>No users found.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,11 +1,11 @@
 package com.example.inventory_management.service;
 
-import com.example.inventory_management.dto.UserRegistrationDto;
-import com.example.inventory_management.exception.BadRequestException;
-import com.example.inventory_management.model.Role;
-import com.example.inventory_management.model.User;
-import com.example.inventory_management.repository.RoleRepository;
-import com.example.inventory_management.repository.UserRepository;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -14,13 +14,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.example.inventory_management.dto.UserRegistrationDto;
+import com.example.inventory_management.exception.BadRequestException;
+import com.example.inventory_management.model.Role;
+import com.example.inventory_management.model.User;
+import com.example.inventory_management.repository.RoleRepository;
+import com.example.inventory_management.repository.UserRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -86,5 +85,37 @@ class AuthServiceTest {
         assertThat(savedUser.getRoles())
                 .extracting(Role::getName)
                 .containsExactlyInAnyOrder("BUYER");
+    }
+
+    @Test
+    void registerUser_assignsSellerRoleWhenRequested() {
+        UserRegistrationDto registration = new UserRegistrationDto("seller1", "seller1@example.com", "plain-pass",
+                "SELLER");
+        Role sellerRole = new Role("SELLER");
+
+        when(userRepository.findByUsername("seller1")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("seller1@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("plain-pass")).thenReturn("encoded-pass");
+        when(roleRepository.findByName("SELLER")).thenReturn(Optional.of(sellerRole));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User savedUser = authService.registerUser(registration);
+
+        assertThat(savedUser.getRoles())
+                .extracting(Role::getName)
+                .containsExactlyInAnyOrder("SELLER");
+    }
+
+    @Test
+    void registerUser_rejectsAdminSelfRegistration() {
+        UserRegistrationDto registration = new UserRegistrationDto("admin2", "admin2@example.com", "plain-pass",
+                "ADMIN");
+
+        when(userRepository.findByUsername("admin2")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("admin2@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.registerUser(registration))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Only BUYER or SELLER");
     }
 }
