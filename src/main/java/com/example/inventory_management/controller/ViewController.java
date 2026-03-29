@@ -6,9 +6,19 @@ import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -86,16 +96,47 @@ public class ViewController {
     public String registerUser(@RequestParam String username,
             @RequestParam String email,
             @RequestParam String password,
-            @RequestParam(value = "role", required = false) String role) {
+            @RequestParam(value = "role", required = false) String role,
+            HttpServletRequest request) {
         try {
-            authService.registerUser(new UserRegistrationDto(username, email, password, role));
-            return "redirect:/login?registered";
+            User registeredUser = authService.registerUser(new UserRegistrationDto(username, email, password, role));
+
+            List<GrantedAuthority> authorities = registeredUser.getRoles().stream()
+                    .map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName()))
+                    .collect(Collectors.toList());
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    registeredUser.getUsername(),
+                    null,
+                    authorities);
+
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+
+            HttpSession session = request.getSession(true);
+            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+
+            return "redirect:" + resolvePostRegistrationRedirect(registeredUser);
         } catch (BadRequestException ex) {
             return "redirect:/register?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
         } catch (Exception ex) {
             return "redirect:/register?error="
                     + URLEncoder.encode("Registration failed. Please try again.", StandardCharsets.UTF_8);
         }
+    }
+
+    private String resolvePostRegistrationRedirect(User user) {
+        boolean isSeller = user.getRoles().stream().anyMatch(role -> "SELLER".equals(role.getName()));
+        boolean isBuyer = user.getRoles().stream().anyMatch(role -> "BUYER".equals(role.getName()));
+
+        if (isSeller) {
+            return "/dashboard";
+        }
+        if (isBuyer) {
+            return "/dashboard";
+        }
+        return "/dashboard";
     }
 
     @GetMapping("/dashboard")
@@ -212,12 +253,14 @@ public class ViewController {
     @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     public String allOrders(Model model, Principal principal,
             @RequestParam(value = "error", required = false) String error,
-            @RequestParam(value = "placed", required = false) String placed) {
+            @RequestParam(value = "placed", required = false) String placed,
+            @RequestParam(value = "canceled", required = false) String canceled) {
         model.addAttribute("username", principal.getName());
         model.addAttribute("orders", orderService.getAllOrders());
         model.addAttribute("products", productService.getAllProducts());
         model.addAttribute("title", "All Orders");
         model.addAttribute("placed", placed != null);
+        model.addAttribute("canceled", canceled != null);
         model.addAttribute("error", error);
         return "orders";
     }
@@ -228,6 +271,7 @@ public class ViewController {
             Authentication authentication,
             @RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "placed", required = false) String placed,
+            @RequestParam(value = "canceled", required = false) String canceled,
             @RequestParam(value = "productId", required = false) Long productId,
             @RequestParam(value = "quantity", required = false) Integer quantity) {
         boolean isBuyer = authentication.getAuthorities().stream()
@@ -242,6 +286,7 @@ public class ViewController {
         model.addAttribute("products", productService.getAllProducts());
         model.addAttribute("title", "My Orders");
         model.addAttribute("placed", placed != null);
+        model.addAttribute("canceled", canceled != null);
         model.addAttribute("error", error);
         model.addAttribute("preselectedProductId", productId);
         model.addAttribute("preselectedQuantity", quantity);
@@ -262,6 +307,23 @@ public class ViewController {
             return "redirect:/orders/me?error=" + URLEncoder.encode(ex.getMessage(), StandardCharsets.UTF_8);
         } catch (Exception ex) {
             return "redirect:/orders/me?error=" + URLEncoder.encode("Unable to place order", StandardCharsets.UTF_8);
+        }
+    }
+
+    @PostMapping("/orders/cancel/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','BUYER')")
+    public String cancelOrder(@PathVariable Long id, Principal principal, Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+
+        String redirectBase = isAdmin ? "/orders" : "/orders/me";
+
+        try {
+            orderService.cancelOrder(id, principal.getName(), isAdmin);
+            return "redirect:" + redirectBase + "?canceled";
+        } catch (Exception ex) {
+            return "redirect:" + redirectBase + "?error="
+                    + URLEncoder.encode("Unable to cancel order", StandardCharsets.UTF_8);
         }
     }
 }
