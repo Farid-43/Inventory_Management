@@ -202,6 +202,30 @@ class ControllerIntegrationTests {
                 .andExpect(jsonPath("$.message").value("Only BUYER or SELLER accounts can be self-registered"));
     }
 
+        @Test
+        void registerForm_buyerRedirectsToDashboard() throws Exception {
+                mockMvc.perform(post("/register")
+                                .with(csrf())
+                                .param("username", "buyer-form")
+                                .param("email", "buyer-form@example.com")
+                                .param("password", "password123")
+                                .param("role", "BUYER"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/dashboard"));
+        }
+
+        @Test
+        void registerForm_sellerRedirectsToDashboard() throws Exception {
+                mockMvc.perform(post("/register")
+                                .with(csrf())
+                                .param("username", "seller-form")
+                                .param("email", "seller-form@example.com")
+                                .param("password", "password123")
+                                .param("role", "SELLER"))
+                                .andExpect(status().is3xxRedirection())
+                                .andExpect(redirectedUrl("/dashboard"));
+        }
+
     @Test
     @WithMockUser(username = "buyer", roles = { "BUYER" })
     void buyer_canPlaceAndFetchOwnOrders() throws Exception {
