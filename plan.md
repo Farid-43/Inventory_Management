@@ -1,147 +1,126 @@
-# Detailed Execution Plan: Simple Inventory Management (2-Person Team)
+# Detailed Execution Plan: Simple Inventory Management (Shift-Left DevOps Approach)
 
-This step-by-step serialized plan incorporates the mandatory Git & GitHub pull request workflow to ensure you safely avoid "Direct push to main" and meet all project evaluation rubrics exactly.
+This updated serialized plan incorporates a "Shift Left" approach. We will set up Docker and a GitHub Actions CI pipeline right away. From that point on, **every feature branch must include relevant tests**, and the CI pipeline will verify those tests automatically before any PR can be merged.
 
 ## Prerequisite: The Standard Workflow (MUST READ)
 
 Since direct pushes to `main` equal automatic failure, you must follow this exact loop for **every single phase** below:
 
-1. One team member creates a feature branch off `develop` (e.g., `git checkout -b feature/database-setup`).
-2. That member completes the assigned code/tasks.
-3. The member commits and pushes to GitHub: `git push origin YOUR_BRANCH_NAME`.
+1. Create a feature branch off `develop` (e.g., `git checkout -b feature/database-setup`).
+2. Write the code **AND the required tests** for your feature.
+3. Commit and push: `git push origin YOUR_BRANCH_NAME`.
 4. Open a **Pull Request (PR)** on GitHub from the feature branch into `develop`.
-5. The **other member** reviews the code, leaves a comment, approves the PR, and merges it into `develop`.
-6. Both members pull the latest `develop` locally: `git checkout develop && git pull`.
+5. **CI/CD Automation runs:** GitHub Actions will automatically build the project and run your tests.
+6. The **other member** reviews the code, ensures the CI check is green (Passed), approves, and merges.
+7. Both members pull the latest `develop` locally.
 
 ---
 
-## Phase 1: GitHub Settings & Repository Setup (Do This First)
+## Phase 1: GitHub Settings & Repository Setup (Status: Complete)
 
 _Requirement Check:_ Branch protection configured, No direct push to main.
 
-- **Member 1:** Go to GitHub and create a new repository. Invite Member 2 as a Collaborator.
-- **Member 1:** Push this initialized Spring Boot project to `main` branch.
-- **Member 1:** Go to the Repository Settings in GitHub -> **Branches** -> Add a branch protection rule for `main`.
-  - Check: _Require a pull request before merging_.
-  - Check: _Require approvals_ (Set to 1).
-  - Check: _Do not allow bypassing the above settings_.
-- **Member 1:** Locally, create the `develop` branch and push it: `git checkout -b develop && git push -u origin develop`.
-- **Member 2:** Accept the GitHub invite, clone the repo locally, and checkout the `develop` branch.
-- _Status:_ Workspace is primed. Branch protection is active.
+- Repository created, collaborators invited, `main` branch protected.
+- `develop` branch initialized.
 
-## Phase 2: Docker & Database Connection
+## Phase 2: Dockerization & Base CI/CD Pipeline (Status: Complete)
 
-_Requirement Check:_ Postgres, proper environment variables.
+_Requirement Check:_ Dockerfile, GitHub Actions, Postgres Docker Compose.
 
 - **Assignee:** Member 1
-- **Branch:** `feature/db-setup`
+- **Branch:** `feature/ci-cd-docker`
 - **Task Details:**
-  1. In `compose.yaml`, map Postgres port `5432:5432`.
-  2. In `src/main/resources/application.yaml`, setup Spring Datasource pointing to PostgreSQL.
-  3. Use environment variables to avoid hardcoded credentials (e.g., `url: ${DB_URL:jdbc:postgresql://localhost:5432/mydatabase}`, `username: ${DB_USER:myuser}`).
-- **Git Action:** Member 1 pushes the code, opens PR. Member 2 reviews and merges.
+  1. Create a `Dockerfile` for the Spring Boot app.
+  2. Create a `compose.yaml` to spin up a local PostgreSQL database (`5432:5432`).
+  3. Create `.github/workflows/ci.yml`. Configure it to trigger on PRs to `develop` and `main`. It should: Checkout code, Setup Java 17/21, and run `mvn clean test`.
+  4. Once merged, update GitHub Branch Protection for `develop` and `main` to **Require status checks to pass** (selecting the newly created test workflow).
+- **Git Action:** Push PR. Member 2 reviews. Must pass CI. Merge.
 
-## Phase 3: Entity Creation & Database Relationships
+## Phase 3: Entities, Repositories, & DB Connection (Status: Complete)
 
-_Requirement Check:_ 4+ tables, proper entity relationships (1:M, M:1, M:M), clean code.
+_Requirement Check:_ DB connected, 4+ tables, Entity relationships (1:M, M:1, M:M), Tests.
 
 - **Assignee:** Member 2
-- **Branch:** `feature/entities-repositories`
+- **Branch:** `feature/entities-db`
 - **Task Details:**
-  1. Create package `com.example.inventory_management.entity`.
-  2. Create `User` (id, username, password).
-  3. Create `Role` (id, name). Map Many-to-Many to `User` (creates `user_roles`).
-  4. Create `Product` (id, name, description, price, stockQuantity).
-  5. Create `Order` (id, date, status). Map Many-to-One to `User` (a user has many orders).
-  6. Create `OrderItem` (id, quantity). Map Many-to-One to `Order` and `Product`.
-  7. Create package `com.example.inventory_management.repository` and add JPA Repository interfaces for these entities.
-- **Git Action:** Member 2 pushes code, opens PR. Member 1 reviews and merges.
+  1. Setup Spring Datasource pointing to PostgreSQL in `application.yaml` using environment variables.
+  2. Create `User`, `Role`, `Product`, `Order`, `OrderItem` entities with proper mappings.
+  3. Create Spring Data JPA Repositories.
+  4. **Testing:** Write basic `@DataJpaTest` tests to verify that your entities save correctly to the database.
+- **Git Action:** Phase implementation completed on `feature/entities-db`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 4: Foundational Spring Security
+## Phase 4: Foundational Spring Security (Status: Complete)
 
-_Requirement Check:_ Spring Security implemented, Password encryption (BCrypt).
+_Requirement Check:_ Spring Security, BCrypt Password encryption.
 
 - **Assignee:** Member 1
-- **Branch:** `feature/basic-security`
+- **Branch:** `feature/security`
 - **Task Details:**
-  1. Create package `com.example.inventory_management.security`.
-  2. Create `SecurityConfig` class. Define `BCryptPasswordEncoder` bean.
-  3. Implement a custom `UserDetailsService` to fetch users by username from the `UserRepository`.
-  4. Configure basic HttpSecurity (e.g., allow `/register` publicly, require login for everything else, enable form login).
-- **Git Action:** Member 1 pushes code, opens PR. Member 2 reviews and merges.
+  1. Create `SecurityConfig` with `BCryptPasswordEncoder`.
+  2. Implement `UserDetailsService` connecting to `UserRepository`.
+  3. Configure basic `HttpSecurity` (form login, allow `/register` publicly).
+  4. **Testing:** Write Unit tests mocking the `UserRepository` to test your `UserDetailsService`.
+- **Git Action:** Phase implementation completed on `security`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 5: Business Logic, DTOs & Exceptions
+## Phase 5: Business Logic, DTOs & Exceptions (Status: Complete)
 
 _Requirement Check:_ DTO usage, Exception handling, Layered architecture.
 
 - **Assignee:** Member 2
 - **Branch:** `feature/business-logic`
 - **Task Details:**
-  1. Create a `@ControllerAdvice` class in an `exception` package to handle errors cleanly (e.g., `ResourceNotFoundException`).
-  2. Create a `dto` package (e.g., `ProductRequestDto`, `ProductResponseDto`, `UserRegistrationDto`).
-  3. Create `ProductService` for handling CRUD operations. Ensure it returns DTOs instead of raw Entities.
-  4. Create `AuthService` handling user registration (encrypting the password before saving to DB).
-- **Git Action:** Member 2 pushes code, opens PR. Member 1 reviews and merges.
+  1. Create `@ControllerAdvice` for global exceptions (e.g., `ResourceNotFoundException`).
+  2. Create DTOs (`ProductRequestDto`, `ProductResponseDto`, `UserRegistrationDto`).
+  3. Create `ProductService` and `AuthService`.
+  4. **Testing:** Write highly focused Unit Tests using `@ExtendWith(MockitoExtension.class)` for all Service classes.
+- **Git Action:** Phase implementation completed on `feature/business-logic`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 6: REST Controllers & Roles Authorization
+## Phase 6: REST Controllers & Roles Authorization (Status: Complete)
 
 _Requirement Check:_ 3 Controllers, Roles enforced (ADMIN, SELLER, BUYER), REST principles.
 
 - **Assignee:** Member 1
 - **Branch:** `feature/rest-controllers`
 - **Task Details:**
-  1. Restrict methods using `@PreAuthorize` tags based on roles (e.g., Only `ADMIN` or `SELLER` can create/delete products).
-  2. Create `ProductController` with standard REST mapped endpoints (GET, POST, PUT, DELETE).
-  3. Create `OrderController` for placing and fetching orders.
-  4. Create `AuthController` to handle the registration endpoint.
-- **Git Action:** Member 1 pushes code, opens PR. Member 2 reviews and merges.
+  1. Create `ProductController`, `OrderController`, `AuthController`.
+  2. Restrict methods using `@PreAuthorize` based on roles.
+  3. **Testing:** Write Integration Tests using `@SpringBootTest` and `MockMvc` to verify endpoint routing, DTO validation, and security access.
+- **Git Action:** Phase implementation completed on `feature/rest-controllers`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 7: UI Integration (Thymeleaf Templates)
+## Phase 7: UI Integration (Thymeleaf Templates) (Status: Complete)
 
 _Requirement Check:_ Thymeleaf, Complete App Flow.
 
 - **Assignee:** Member 2
 - **Branch:** `feature/ui-templates`
 - **Task Details:**
-  1. Create `login.html` and `register.html` in `src/main/resources/templates/`.
-  2. Create `dashboard.html` for listing products.
-  3. Integrate the Thymeleaf Security Dialect to dynamically show "Add Product" buttons only if the logged-in user is an ADMIN or SELLER.
-- **Git Action:** Member 2 pushes code, opens PR. Member 1 reviews and merges.
+  1. Create UI views: `login.html`, `register.html`, `dashboard.html`, `products.html`, and `orders.html`.
+  2. Integrate Thymeleaf Security Dialect for role-based UI rendering.
+  3. Wire dashboard actions to UI routes (`/products`, `/orders`, `/orders/me`) instead of raw API JSON endpoints.
+  4. Support product image input via uploaded file or external image URL link.
+- **Testing:** Add/update `MockMvc` tests to ensure endpoints return expected status codes and role behavior remains correct.
+- **Git Action:** Phase implementation completed on `feature/ui-templates`; push branch, open PR to `develop`, ensure CI is green, then complete review and merge.
 
-## Phase 8: Automated Tests
+## Phase 8: Automated Cloud Deployment (CD)
 
-_Requirement Check:_ 15 Unit tests, 3 Integration tests.
-
-- **Assignee:** Member 1 & Member 2 split
-- **Branch:** `feature/tests`
-- **Task Details:**
-  1. **Member 1:** Write 15 Unit tests in `src/test/...`. Focus purely on testing services (e.g., `ProductService`) using `@ExtendWith(MockitoExtension.class)` and `@Mock`.
-  2. **Member 2:** Write 3 Integration tests. Use `@SpringBootTest` and `MockMvc` to test controller endpoints from request to database level.
-- **Git Action:** Can be done separately on branching. Push code, open PR(s), Review and Merge into `develop`.
-
-## Phase 9: Dockerization & CI/CD Pipeline
-
-_Requirement Check:_ GitHub Actions, Dockerfile, Tests run in CI.
+_Requirement Check:_ App deployed publicly automatically.
 
 - **Assignee:** Member 1
-- **Branch:** `feature/ci-cd`
+- **Branch:** `feature/automated-deployment`
 - **Task Details:**
-  1. Create a `Dockerfile` to build and run the Spring Boot app.
-  2. Sign up on **Render**. Set up the Postgres database.
-  3. Create a `.github/workflows/deploy.yml` file. Configure it to run on pushes to `main`.
-  4. Provide steps to: Checkout code, Setup Java 17, run `mvn test` (satisfies CI requirement).
-  5. Set up Render deployment (using Render's Auto-Deploy hooking with GitHub).
-- **Git Action:** Member 1 pushes code, opens PR. Member 2 reviews and merges into `develop`.
+  1. Register on **Render** (or similar platform).
+  2. Create the managed PostgreSQL database on Render.
+  3. Either append to the existing Action or create a `.github/workflows/deploy.yml` that pulls the image or hooks deeply into Render's auto-deploy upon commits to `main`.
+- **Git Action:** Push PR. Member 2 reviews and merges.
 
-## Phase 10: Final Deployment & Documentation
+## Phase 9: Final Documentation & Demo
 
-_Requirement Check:_ App deployed publicly, README, Diagrams, clean.
+_Requirement Check:_ README, Diagrams, Clean code, Demo prep.
 
-- **Assignee:** Member 2 (with Member 1 assistance)
-- **Branch:** Final Pull Request `develop` -> `main`
+- **Assignee:** Member 2 (assisted by Member 1)
+- **Branch:** Final PR `develop` -> `main`
 - **Task Details:**
-  1. Open PR from `develop` to `main`. Member 1 reviews and merges.
-  2. Watch GitHub Actions run the tests automatically and see the app deploy to Render.
-  3. Both members log into Render and verify the deployment is publicly accessible.
-  4. Update `README.md` on `main` directly (or via a quick docs branch): Add ER diagram, Architecture diagram, run instructions, and live URL.
-  5. Ensure the 5-Minute Demo is prepared successfully.
+  1. Make sure everything works smoothly.
+  2. Write a stellar `README.md` with Architecture Diagrams, ER Diagrams, and the Live URL.
+  3. Merge `develop` into `main`. Verify the deployment works beautifully on the public cloud.
+  4. Prepare the 5-Minute Demo.

@@ -1,0 +1,353 @@
+<!doctype html>
+<html
+  lang="en"
+  xmlns:th="http://www.thymeleaf.org"
+  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Products | Inventory Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" th:href="@{/css/app.css(v=4)}" />
+  </head>
+  <body class="app-screen">
+    <header class="app-header fade-in">
+      <div class="header-left">
+        <span class="brand">📦 Inventory Console</span>
+      </div>
+      <div class="header-right">
+        <a class="btn btn-ghost btn-sm" th:href="@{/dashboard}">← Dashboard</a>
+        <span class="user-badge">
+          <span
+            class="avatar"
+            th:text="${#strings.toUpperCase(#strings.substring(username, 0, 1))}"
+            >U</span
+          >
+          <span th:text="${username}">user</span>
+        </span>
+        <form th:action="@{/logout}" method="post" style="display: inline">
+          <input
+            type="hidden"
+            th:name="${_csrf.parameterName}"
+            th:value="${_csrf.token}"
+          />
+          <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="app-content">
+      <div class="page-header fade-in">
+        <h1 class="page-title">Products</h1>
+        <p class="page-subtitle" sec:authorize="hasAnyRole('ADMIN','SELLER')">
+          Manage inventory catalog
+        </p>
+        <p class="page-subtitle" sec:authorize="hasRole('BUYER')">
+          Browse available products and place orders
+        </p>
+      </div>
+
+      <!-- Global Alerts -->
+      <div class="fade-in" style="margin-bottom: 20px">
+        <div th:if="${created}" class="alert alert-success">
+          Product created successfully.
+        </div>
+        <div th:if="${deleted}" class="alert alert-success">
+          Product deleted successfully.
+        </div>
+        <div
+          th:if="${error}"
+          class="alert alert-error"
+          th:text="${error}"
+        ></div>
+      </div>
+
+      <!-- ========== SELLER / ADMIN VIEW — two-column with form ========== -->
+      <div
+        class="content-grid two-col fade-in fade-in-delay"
+        sec:authorize="hasAnyRole('ADMIN','SELLER')"
+      >
+        <section class="panel">
+          <h2>Add Product</h2>
+          <p class="panel-desc">Create new inventory entries for sales.</p>
+          <form
+            class="form-stack"
+            th:action="@{/products}"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <input
+              type="hidden"
+              th:name="${_csrf.parameterName}"
+              th:value="${_csrf.token}"
+            />
+            <div class="form-group">
+              <label for="name">Product Name</label>
+              <input
+                id="name"
+                name="name"
+                placeholder="e.g. Wireless Mouse"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="description">Description</label>
+              <input
+                id="description"
+                name="description"
+                placeholder="Brief product description"
+              />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="price">Price ($)</label>
+                <input
+                  id="price"
+                  name="price"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="stockQuantity">Stock Qty</label>
+                <input
+                  id="stockQuantity"
+                  name="stockQuantity"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  required
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="imageFile">Upload Image (optional)</label>
+              <input
+                id="imageFile"
+                name="imageFile"
+                type="file"
+                accept="image/*"
+              />
+            </div>
+            <div class="form-group">
+              <label for="imageUrl">Or Image URL (optional)</label>
+              <input
+                id="imageUrl"
+                name="imageUrl"
+                type="url"
+                placeholder="https://example.com/photo.jpg"
+              />
+            </div>
+            <button class="btn btn-primary btn-full" type="submit">
+              Save Product
+            </button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>Product List</h2>
+          <p class="panel-desc">All products currently in inventory.</p>
+          <div class="table-wrap" th:if="${!#lists.isEmpty(products)}">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="product : ${products}">
+                  <td>
+                    <img
+                      th:if="${!#strings.isEmpty(product.imageUrl)}"
+                      th:src="${product.imageUrl}"
+                      alt="product"
+                      class="thumb"
+                      onerror="this.style.display = 'none'"
+                    />
+                    <span
+                      th:unless="${!#strings.isEmpty(product.imageUrl)}"
+                      style="color: var(--text-muted)"
+                      >—</span
+                    >
+                  </td>
+                  <td th:text="${product.name}">Mouse</td>
+                  <td class="cell-truncate" th:text="${product.description}">
+                    Wireless
+                  </td>
+                  <td>$<span th:text="${product.price}">0.00</span></td>
+                  <td>
+                    <span
+                      class="badge badge-stock"
+                      th:if="${product.stockQuantity > 10}"
+                      th:text="${product.stockQuantity}"
+                      >50</span
+                    >
+                    <span
+                      class="badge badge-low"
+                      th:if="${product.stockQuantity > 0 and product.stockQuantity <= 10}"
+                      th:text="${product.stockQuantity + ' low'}"
+                      >5</span
+                    >
+                    <span
+                      class="badge badge-out"
+                      th:if="${product.stockQuantity == 0}"
+                      >Out</span
+                    >
+                  </td>
+                  <td>
+                    <form
+                      th:action="@{'/products/delete/' + ${product.id}}"
+                      method="post"
+                      style="display: inline"
+                      onsubmit="return confirm('Delete this product?');"
+                    >
+                      <input
+                        type="hidden"
+                        th:name="${_csrf.parameterName}"
+                        th:value="${_csrf.token}"
+                      />
+                      <button type="submit" class="btn btn-danger btn-sm">
+                        Delete
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="empty-state" th:if="${#lists.isEmpty(products)}">
+            <div class="empty-icon">📭</div>
+            <p>No products found yet.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- ========== BUYER VIEW — full-width product card grid ========== -->
+      <div sec:authorize="hasRole('BUYER')" class="fade-in fade-in-delay">
+        <div class="product-card-grid" th:if="${!#lists.isEmpty(products)}">
+          <div class="product-card" th:each="product : ${products}">
+            <div class="product-card-image">
+              <img
+                th:if="${!#strings.isEmpty(product.imageUrl)}"
+                th:src="${product.imageUrl}"
+                alt="product"
+                onerror="
+                  this.src =
+                    'https://via.placeholder.com/400x300?text=Image+Not+Found'
+                "
+              />
+              <div
+                th:unless="${!#strings.isEmpty(product.imageUrl)}"
+                class="product-card-placeholder"
+              >
+                📦
+              </div>
+              <div class="product-card-badges">
+                <span
+                  class="badge badge-stock"
+                  th:if="${product.stockQuantity > 10}"
+                  >In Stock</span
+                >
+                <span
+                  class="badge badge-low"
+                  th:if="${product.stockQuantity > 0 and product.stockQuantity <= 10}"
+                  >Low Stock</span
+                >
+                <span
+                  class="badge badge-out"
+                  th:if="${product.stockQuantity == 0}"
+                  >Out of Stock</span
+                >
+              </div>
+            </div>
+            <div class="product-card-body">
+              <h3 class="product-card-name" th:text="${product.name}">
+                Product
+              </h3>
+              <p
+                class="product-card-desc"
+                th:text="${product.description ?: 'No description available'}"
+              >
+                Description
+              </p>
+              <div class="product-card-footer">
+                <div class="product-card-price">
+                  <span class="price-currency">$</span>
+                  <span class="price-value" th:text="${product.price}"
+                    >0.00</span
+                  >
+                </div>
+                <span
+                  class="product-card-stock"
+                  th:text="'Qty: ' + ${product.stockQuantity}"
+                  >Qty: 0</span
+                >
+              </div>
+
+              <form
+                class="quick-order-form"
+                th:if="${product.stockQuantity > 0}"
+                th:action="@{/orders/me}"
+                method="get"
+              >
+                <input
+                  type="hidden"
+                  name="productId"
+                  th:value="${product.id}"
+                />
+                <label class="quick-order-label" th:for="'qty-' + ${product.id}"
+                  >Quantity</label
+                >
+                <div class="quick-order-row">
+                  <input
+                    class="quick-order-qty"
+                    th:id="'qty-' + ${product.id}"
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    th:attr="max=${product.stockQuantity}"
+                    value="1"
+                    required
+                  />
+                  <button
+                    class="btn btn-primary btn-sm quick-order-btn"
+                    type="submit"
+                  >
+                    Order
+                  </button>
+                </div>
+              </form>
+
+              <button
+                class="btn btn-ghost btn-sm quick-order-btn"
+                type="button"
+                disabled
+                th:if="${product.stockQuantity == 0}"
+              >
+                Unavailable
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" th:if="${#lists.isEmpty(products)}">
+          <div class="empty-icon">📭</div>
+          <p>No products available yet. Check back later!</p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
