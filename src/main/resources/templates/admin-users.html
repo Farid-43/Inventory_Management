@@ -84,6 +84,7 @@
       <section class="panel fade-in fade-in-delay-2">
         <h2>Registered Accounts</h2>
         <p class="panel-desc">All active users in the system.</p>
+        <div id="role-update-status" class="alert" style="display: none"></div>
 
         <div class="table-wrap" th:if="${!#lists.isEmpty(users)}">
           <table class="data-table">
@@ -93,25 +94,90 @@
                 <th>Username</th>
                 <th>Email</th>
                 <th>Roles</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr th:each="account : ${users}">
-                <td th:text="'#' + ${account.id}">#1</td>
-                <td th:text="${account.username}">username</td>
-                <td th:text="${account.email}">email@example.com</td>
-                <td>
-                  <div class="order-item-list">
-                    <span
-                      class="order-item-pill"
-                      th:each="role : ${account.roles}"
-                      th:text="${role.name}"
+              <th:block th:each="account : ${users}">
+                <tr>
+                  <td th:text="'#' + ${account.id}">#1</td>
+                  <td th:text="${account.username}">username</td>
+                  <td th:text="${account.email}">email@example.com</td>
+                  <td>
+                    <div class="order-item-list">
+                      <span
+                        class="order-item-pill"
+                        th:each="role : ${account.roles}"
+                        th:text="${role.name}"
+                      >
+                        ROLE
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-sm role-edit-trigger"
+                      th:attr="data-user-id=${account.id}"
                     >
-                      ROLE
-                    </span>
-                  </div>
-                </td>
-              </tr>
+                      Edit Roles
+                    </button>
+                  </td>
+                </tr>
+                <tr
+                  class="role-editor-row"
+                  th:id="'role-editor-' + ${account.id}"
+                  hidden
+                >
+                  <td colspan="5">
+                    <form
+                      class="role-editor-form"
+                      th:attr="data-user-id=${account.id}"
+                    >
+                      <div class="role-editor-options">
+                        <label class="role-option">
+                          <input
+                            type="checkbox"
+                            name="roles"
+                            value="ADMIN"
+                            th:checked="${account.roles.?[name == 'ADMIN'].size() > 0}"
+                          />
+                          ADMIN
+                        </label>
+                        <label class="role-option">
+                          <input
+                            type="checkbox"
+                            name="roles"
+                            value="SELLER"
+                            th:checked="${account.roles.?[name == 'SELLER'].size() > 0}"
+                          />
+                          SELLER
+                        </label>
+                        <label class="role-option">
+                          <input
+                            type="checkbox"
+                            name="roles"
+                            value="BUYER"
+                            th:checked="${account.roles.?[name == 'BUYER'].size() > 0}"
+                          />
+                          BUYER
+                        </label>
+                      </div>
+                      <div class="role-editor-actions">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-ghost btn-sm role-editor-cancel"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+              </th:block>
             </tbody>
           </table>
         </div>
@@ -122,5 +188,7 @@
         </div>
       </section>
     </main>
+
+    <script th:src="@{/js/admin-users.js(v=1)}"></script>
   </body>
 </html>

@@ -66,7 +66,7 @@
 
       <div class="content-grid two-col fade-in fade-in-delay">
         <!-- Place Order Form (Buyer Only) -->
-        <section class="panel" sec:authorize="hasRole('BUYER')">
+        <section class="panel" th:if="${showBuyerOrderForm}">
           <h2>Place Order</h2>
           <p class="panel-desc">
             Select a product and quantity to create a new order.
@@ -120,7 +120,7 @@
         </section>
 
         <!-- Seller/Admin view -->
-        <section class="panel" sec:authorize="hasAnyRole('ADMIN','SELLER')">
+        <section class="panel" th:if="${showSellerMonitoringPanel}">
           <h2>Orders Monitoring</h2>
           <p class="panel-desc">
             Seller/Admin accounts can monitor customer orders but cannot place
@@ -145,7 +145,7 @@
                   <th>User</th>
                   <th>Products</th>
                   <th>Total</th>
-                  <th sec:authorize="hasAnyRole('ADMIN','BUYER')">Actions</th>
+                  <th th:if="${showCancelActions}">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -177,7 +177,7 @@
                     >
                   </td>
                   <td>$<span th:text="${order.totalAmount}">0.00</span></td>
-                  <td sec:authorize="hasAnyRole('ADMIN','BUYER')">
+                  <td th:if="${showCancelActions}">
                     <form
                       th:action="@{'/orders/cancel/' + ${order.id}}"
                       method="post"
@@ -205,10 +205,10 @@
 
           <div class="empty-state" th:if="${#lists.isEmpty(orders)}">
             <div class="empty-icon">📭</div>
-            <p sec:authorize="hasRole('BUYER')">
+            <p th:if="${showBuyerOrderForm}">
               No orders yet. Place one using the form.
             </p>
-            <p sec:authorize="hasAnyRole('ADMIN','SELLER')">
+            <p th:if="${showSellerMonitoringPanel}">
               No customer orders have been placed yet.
             </p>
           </div>

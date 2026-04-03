@@ -202,29 +202,29 @@ class ControllerIntegrationTests {
                 .andExpect(jsonPath("$.message").value("Only BUYER or SELLER accounts can be self-registered"));
     }
 
-        @Test
-        void registerForm_buyerRedirectsToDashboard() throws Exception {
-                mockMvc.perform(post("/register")
-                                .with(csrf())
-                                .param("username", "buyer-form")
-                                .param("email", "buyer-form@example.com")
-                                .param("password", "password123")
-                                .param("role", "BUYER"))
-                                .andExpect(status().is3xxRedirection())
-                                .andExpect(redirectedUrl("/dashboard"));
-        }
+    @Test
+    void registerForm_buyerRedirectsToDashboard() throws Exception {
+        mockMvc.perform(post("/register")
+                .with(csrf())
+                .param("username", "buyer-form")
+                .param("email", "buyer-form@example.com")
+                .param("password", "password123")
+                .param("role", "BUYER"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/dashboard"));
+    }
 
-        @Test
-        void registerForm_sellerRedirectsToDashboard() throws Exception {
-                mockMvc.perform(post("/register")
-                                .with(csrf())
-                                .param("username", "seller-form")
-                                .param("email", "seller-form@example.com")
-                                .param("password", "password123")
-                                .param("role", "SELLER"))
-                                .andExpect(status().is3xxRedirection())
-                                .andExpect(redirectedUrl("/dashboard"));
-        }
+    @Test
+    void registerForm_sellerRedirectsToDashboard() throws Exception {
+        mockMvc.perform(post("/register")
+                .with(csrf())
+                .param("username", "seller-form")
+                .param("email", "seller-form@example.com")
+                .param("password", "password123")
+                .param("role", "SELLER"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/dashboard"));
+    }
 
     @Test
     @WithMockUser(username = "buyer", roles = { "BUYER" })
@@ -387,6 +387,77 @@ class ControllerIntegrationTests {
         mockMvc.perform(get("/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin-users"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = { "ADMIN" })
+    void admin_canUpdateUserRolesViaApi() throws Exception {
+        Role buyerRole = roleRepository.findByName("BUYER").orElseThrow();
+
+        User targetUser = new User("role-target", "role-target@example.com", "encoded-password");
+        targetUser.getRoles().add(buyerRole);
+        targetUser = userRepository.save(targetUser);
+
+        String updateBody = """
+                {
+                  "roles": ["BUYER", "SELLER"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/{id}/roles", targetUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("role-target"))
+                .andExpect(jsonPath("$.roles", hasItems("BUYER", "SELLER")));
+
+        User updated = userRepository.findById(targetUser.getId()).orElseThrow();
+        assertThat(updated.getRoles())
+                .extracting(Role::getName)
+                .containsExactlyInAnyOrder("BUYER", "SELLER");
+    }
+
+    @Test
+    @WithMockUser(username = "seller", roles = { "SELLER" })
+    void seller_cannotUpdateUserRolesViaApi() throws Exception {
+        Role buyerRole = roleRepository.findByName("BUYER").orElseThrow();
+
+        User targetUser = new User("blocked-target", "blocked-target@example.com", "encoded-password");
+        targetUser.getRoles().add(buyerRole);
+        targetUser = userRepository.save(targetUser);
+
+        String updateBody = """
+                {
+                  "roles": ["BUYER", "SELLER"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/{id}/roles", targetUser.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateBody))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = { "ADMIN" })
+    void admin_cannotRemoveLastAdminRole() throws Exception {
+        Role adminRole = roleRepository.findByName("ADMIN").orElseThrow();
+
+        User onlyAdmin = new User("only-admin", "only-admin@example.com", "encoded-password");
+        onlyAdmin.getRoles().add(adminRole);
+        onlyAdmin = userRepository.save(onlyAdmin);
+
+        String updateBody = """
+                {
+                  "roles": ["BUYER"]
+                }
+                """;
+
+        mockMvc.perform(put("/api/users/{id}/roles", onlyAdmin.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(updateBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("At least one ADMIN user must remain in the system"));
     }
 
     @Test
