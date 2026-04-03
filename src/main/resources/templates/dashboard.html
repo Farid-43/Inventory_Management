@@ -45,20 +45,35 @@
       <!-- Welcome Hero -->
       <div class="hero-section fade-in">
         <div class="hero-greeting">
-          <p class="eyebrow" sec:authorize="hasRole('ADMIN')">Administrator</p>
-          <p class="eyebrow" sec:authorize="hasRole('SELLER')">Seller</p>
-          <p class="eyebrow" sec:authorize="hasRole('BUYER')">Buyer</p>
+          <p class="eyebrow" th:if="${isAdmin}">Administrator</p>
+          <p class="eyebrow" th:if="${isSellerBuyer}">Seller | Buyer</p>
+          <p class="eyebrow" th:if="${isSeller and !isBuyer and !isAdmin}">
+            Seller
+          </p>
+          <p class="eyebrow" th:if="${isBuyer and !isSeller and !isAdmin}">
+            Buyer
+          </p>
           <h1 class="hero-title">
             Welcome back, <span th:text="${username}">user</span> 👋
           </h1>
-          <p class="page-subtitle" sec:authorize="hasRole('ADMIN')">
+          <p class="page-subtitle" th:if="${isAdmin}">
             Control users, roles, inventory, and platform-wide order operations.
           </p>
-          <p class="page-subtitle" sec:authorize="hasRole('SELLER')">
+          <p
+            class="page-subtitle"
+            th:if="${isSeller and !isBuyer and !isAdmin}"
+          >
             Manage your inventory and monitor customer orders.
           </p>
-          <p class="page-subtitle" sec:authorize="hasRole('BUYER')">
+          <p
+            class="page-subtitle"
+            th:if="${isBuyer and !isSeller and !isAdmin}"
+          >
             Browse products, place orders, and track your purchases.
+          </p>
+          <p class="page-subtitle" th:if="${isSellerBuyer}">
+            Manage inventory, monitor customer orders, and track your own
+            purchases.
           </p>
         </div>
       </div>
@@ -106,21 +121,21 @@
       <h2 class="section-title fade-in fade-in-delay">Quick Actions</h2>
       <div class="card-grid fade-in fade-in-delay-2">
         <!-- ADMIN/SELLER cards -->
-        <div class="action-card" sec:authorize="hasAnyRole('ADMIN','SELLER')">
+        <div class="action-card" th:if="${showManageProductsCard}">
           <div class="action-icon">🏷️</div>
           <h3>Manage Products</h3>
           <p>Create, inspect, and remove products from the catalog.</p>
           <a class="btn btn-primary" th:href="@{/products}">Go to Products</a>
         </div>
 
-        <div class="action-card" sec:authorize="hasAnyRole('ADMIN','SELLER')">
+        <div class="action-card" th:if="${showAllOrdersCard}">
           <div class="action-icon">📊</div>
           <h3>All Orders</h3>
           <p>Monitor order history across all customers.</p>
           <a class="btn btn-primary" th:href="@{/orders}">View All Orders</a>
         </div>
 
-        <div class="action-card" sec:authorize="hasRole('ADMIN')">
+        <div class="action-card" th:if="${showUserManagementCard}">
           <div class="action-icon">👥</div>
           <h3>User Management</h3>
           <p>
@@ -131,7 +146,7 @@
         </div>
 
         <!-- BUYER cards -->
-        <div class="action-card" sec:authorize="hasRole('BUYER')">
+        <div class="action-card" th:if="${showBrowseCatalogCard}">
           <div class="action-icon">🛍️</div>
           <h3>Browse Catalog</h3>
           <p>
@@ -142,7 +157,7 @@
         </div>
 
         <!-- Shared card -->
-        <div class="action-card" sec:authorize="hasRole('BUYER')">
+        <div class="action-card" th:if="${showMyOrdersCard}">
           <div class="action-icon">🛒</div>
           <h3>My Orders</h3>
           <p>Place new orders and track your complete purchase history.</p>

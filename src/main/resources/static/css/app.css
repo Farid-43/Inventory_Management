@@ -206,6 +206,8 @@ select option {
 /* Card Grid (Dashboard) */
 .card-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
 .action-card {
+    display:flex;
+    flex-direction:column;
     padding:28px 24px;
     background:rgba(17,19,32,0.65); border:1px solid var(--glass-border);
     border-radius:var(--radius); backdrop-filter:blur(10px);
@@ -215,6 +217,7 @@ select option {
 .action-icon { font-size:2rem; margin-bottom:12px; }
 .action-card h3 { font-size:1.1rem; font-weight:700; margin-bottom:6px; }
 .action-card p { color:var(--text-secondary); font-size:.88rem; margin-bottom:18px; line-height:1.5; }
+.action-card .btn { margin-top:auto; align-self:flex-start; }
 
 /* Content Grid (Products, Orders) */
 .content-grid { display:grid; gap:20px; grid-template-columns:1fr; }
@@ -275,6 +278,47 @@ select option {
     color:var(--text-secondary);
     font-size:.76rem;
     font-weight:600;
+}
+
+.role-editor-row td {
+    background:rgba(99,102,241,0.05);
+}
+
+.role-editor-form {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.role-editor-options {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.role-option {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:.84rem;
+    color:var(--text-secondary);
+    padding:6px 10px;
+    border:1px solid var(--glass-border);
+    border-radius:999px;
+    background:rgba(255,255,255,0.02);
+}
+
+.role-option input[type="checkbox"] {
+    width:auto;
+    margin:0;
+    accent-color:var(--accent-light);
+}
+
+.role-editor-actions {
+    display:flex;
+    gap:8px;
 }
 
 .empty-state {
@@ -434,4 +478,6 @@ select option {
     .form-row { grid-template-columns:1fr; }
     .card-grid { grid-template-columns:1fr; }
     .header-right { width:100%; justify-content:space-between; }
+    .role-editor-form { align-items:flex-start; }
+    .role-editor-actions { width:100%; }
 }
