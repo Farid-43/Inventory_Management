@@ -8,9 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -39,6 +36,9 @@ import com.example.inventory_management.service.AuthService;
 import com.example.inventory_management.service.ImageStorageService;
 import com.example.inventory_management.service.OrderService;
 import com.example.inventory_management.service.ProductService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class ViewController {
@@ -140,8 +140,23 @@ public class ViewController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model, Principal principal) {
+    public String dashboard(Model model, Principal principal, Authentication authentication) {
+        boolean isAdmin = hasAuthority(authentication, "ROLE_ADMIN");
+        boolean isSeller = hasAuthority(authentication, "ROLE_SELLER");
+        boolean isBuyer = hasAuthority(authentication, "ROLE_BUYER");
+
         model.addAttribute("username", principal.getName());
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("isSeller", isSeller);
+        model.addAttribute("isBuyer", isBuyer);
+        model.addAttribute("isSellerBuyer", isSeller && isBuyer && !isAdmin);
+
+        model.addAttribute("showManageProductsCard", isAdmin || isSeller);
+        model.addAttribute("showAllOrdersCard", isAdmin || isSeller);
+        model.addAttribute("showUserManagementCard", isAdmin);
+        model.addAttribute("showBrowseCatalogCard", isBuyer && !isAdmin && !isSeller);
+        model.addAttribute("showMyOrdersCard", isBuyer);
+
         try {
             model.addAttribute("productCount", productService.getAllProducts().size());
         } catch (Exception e) {
@@ -196,11 +211,17 @@ public class ViewController {
     }
 
     @GetMapping("/products")
-    public String products(Model model, Principal principal,
+    public String products(Model model, Principal principal, Authentication authentication,
             @RequestParam(value = "created", required = false) String created,
             @RequestParam(value = "deleted", required = false) String deleted,
             @RequestParam(value = "error", required = false) String error) {
+        boolean canManageProducts = hasAuthority(authentication, "ROLE_ADMIN")
+                || hasAuthority(authentication, "ROLE_SELLER");
+        boolean canBrowseCatalogOnly = hasAuthority(authentication, "ROLE_BUYER") && !canManageProducts;
+
         model.addAttribute("username", principal != null ? principal.getName() : "user");
+        model.addAttribute("showManageProductsView", canManageProducts);
+        model.addAttribute("showBuyerCatalogView", canBrowseCatalogOnly);
         try {
             model.addAttribute("products", productService.getAllProducts());
         } catch (Exception ex) {
@@ -252,13 +273,19 @@ public class ViewController {
     @GetMapping("/orders")
     @PreAuthorize("hasAnyRole('ADMIN','SELLER')")
     public String allOrders(Model model, Principal principal,
+            Authentication authentication,
             @RequestParam(value = "error", required = false) String error,
             @RequestParam(value = "placed", required = false) String placed,
             @RequestParam(value = "canceled", required = false) String canceled) {
+        boolean isAdmin = hasAuthority(authentication, "ROLE_ADMIN");
+
         model.addAttribute("username", principal.getName());
         model.addAttribute("orders", orderService.getAllOrders());
         model.addAttribute("products", productService.getAllProducts());
         model.addAttribute("title", "All Orders");
+        model.addAttribute("showBuyerOrderForm", false);
+        model.addAttribute("showSellerMonitoringPanel", true);
+        model.addAttribute("showCancelActions", isAdmin);
         model.addAttribute("placed", placed != null);
         model.addAttribute("canceled", canceled != null);
         model.addAttribute("error", error);
@@ -285,6 +312,9 @@ public class ViewController {
         model.addAttribute("orders", orderService.getOrdersForUser(principal.getName()));
         model.addAttribute("products", productService.getAllProducts());
         model.addAttribute("title", "My Orders");
+        model.addAttribute("showBuyerOrderForm", true);
+        model.addAttribute("showSellerMonitoringPanel", false);
+        model.addAttribute("showCancelActions", true);
         model.addAttribute("placed", placed != null);
         model.addAttribute("canceled", canceled != null);
         model.addAttribute("error", error);
@@ -325,5 +355,10 @@ public class ViewController {
             return "redirect:" + redirectBase + "?error="
                     + URLEncoder.encode("Unable to cancel order", StandardCharsets.UTF_8);
         }
+    }
+
+    private boolean hasAuthority(Authentication authentication, String authority) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> authority.equals(a.getAuthority()));
     }
 }

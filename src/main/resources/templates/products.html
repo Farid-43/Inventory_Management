@@ -45,10 +45,10 @@
     <main class="app-content">
       <div class="page-header fade-in">
         <h1 class="page-title">Products</h1>
-        <p class="page-subtitle" sec:authorize="hasAnyRole('ADMIN','SELLER')">
+        <p class="page-subtitle" th:if="${showManageProductsView}">
           Manage inventory catalog
         </p>
-        <p class="page-subtitle" sec:authorize="hasRole('BUYER')">
+        <p class="page-subtitle" th:if="${showBuyerCatalogView}">
           Browse available products and place orders
         </p>
       </div>
@@ -71,7 +71,7 @@
       <!-- ========== SELLER / ADMIN VIEW — two-column with form ========== -->
       <div
         class="content-grid two-col fade-in fade-in-delay"
-        sec:authorize="hasAnyRole('ADMIN','SELLER')"
+        th:if="${showManageProductsView}"
       >
         <section class="panel">
           <h2>Add Product</h2>
@@ -237,7 +237,7 @@
       </div>
 
       <!-- ========== BUYER VIEW — full-width product card grid ========== -->
-      <div sec:authorize="hasRole('BUYER')" class="fade-in fade-in-delay">
+      <div th:if="${showBuyerCatalogView}" class="fade-in fade-in-delay">
         <div class="product-card-grid" th:if="${!#lists.isEmpty(products)}">
           <div class="product-card" th:each="product : ${products}">
             <div class="product-card-image">
